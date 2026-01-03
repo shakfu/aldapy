@@ -27,12 +27,21 @@ The programmatic API creates domain objects that can:
 The AST is the canonical internal representation. The Alda language serves as the human-readable text format for import/export:
 
 ```python
-score = Score()
-score.add(part("piano"), note("c", 4), note("d"), note("e"))
+from aldakit import Score
+from aldakit.compose import note, part, tempo
+
+# Build programmatically
+score = Score.from_elements(
+    part("piano"),
+    tempo(120),
+    note("c", duration=4),
+    note("d"),
+    note("e")
+)
 
 # Export to Alda source
 print(score.to_alda())
-# Output: piano: c4 d e
+# Output: piano: (tempo 120) c4 d e
 
 # Or play directly (bypasses text, goes straight to AST -> MIDI)
 score.play()
@@ -43,13 +52,13 @@ score.play()
 Every musical element is a first-class Python object that can be composed, transformed, and introspected:
 
 ```python
-# Notes are objects
+# Notes are objects - all parameters are explicit keywords
 n = note("c", duration=4, accidental="sharp")
 n.transpose(2)  # Returns new note: d#4
 
 # Chords are collections of notes
 c_major = chord(note("c"), note("e"), note("g"))
-c_minor = c_major.flatten(2)  # Flatten the third
+c_minor = c_major.flatten(index=1)  # Flatten the third (index 1)
 
 # Sequences can be manipulated
 melody = seq(note("c"), note("d"), note("e"), note("f"))
@@ -72,25 +81,33 @@ from aldakit.compose import (
 
 #### Notes
 
+All note parameters use explicit keyword arguments to avoid ambiguity:
+
 ```python
-# Basic note
-note("c")                    # c (quarter note, default octave)
-note("c", 4)                 # c4 (quarter note)
-note("c", 8, "sharp")        # c+8 (eighth note, sharp)
-note("c", dots=1)            # c. (dotted)
-note("c", ms=500)            # c500ms (milliseconds)
+# Basic note - pitch is the only positional argument
+note("c")                              # c (quarter note, default octave 4)
+note("c", duration=4)                  # c4 (quarter note, explicit)
+note("c", duration=8, accidental="+")  # c+8 (eighth note, sharp)
+note("c", duration=4, dots=1)          # c4. (dotted quarter)
+note("c", ms=500)                      # c500ms (milliseconds)
+note("c", seconds=2)                   # c2s (seconds)
+note("c", octave=5)                    # o5 c (set octave)
 
 # Note attributes
-n = note("c", 4)
+n = note("c", duration=4)
 n.pitch                      # "c"
 n.duration                   # 4
-n.midi_pitch                 # 60 (at default octave 4)
+n.octave                     # 4 (default)
+n.accidental                 # None
+n.midi_pitch                 # 60 (computed from pitch + octave + accidental)
 
-# Transformations (return new notes)
+# Transformations (return new notes, immutable)
 n.sharpen()                  # c+4
 n.flatten()                  # c-4
-n.transpose(2)               # d4 (up 2 semitones)
-n.transpose(-12)             # c4 (down an octave)
+n.transpose(semitones=2)     # d4 (up 2 semitones)
+n.transpose(semitones=-12)   # c3 (down an octave)
+n.with_duration(8)           # c8 (new note with different duration)
+n.with_octave(5)             # c4 in octave 5
 ```
 
 #### Rests
@@ -162,69 +179,137 @@ octave_down()                # <
 from aldakit.compose import pp, p, mp, mf, f, ff
 ```
 
-### The Score Class
+### The Unified Score Class
+
+The `Score` class serves as the unified entry point for all inputs. It provides multiple
+class methods for construction and instance methods for manipulation and output.
+
+**Note on Parts vs Voices:**
+- **Parts** = instruments (piano, violin) - independent channels with different timbres
+- **Voices** = parallel lines *within* a single part (e.g., V1/V2 for counterpoint)
 
 ```python
+from aldakit import Score
+from aldakit.compose import note, rest, chord, seq, part, tempo
+
 class Score:
-    def __init__(self):
-        self.elements = []
-        self.variables = {}
+    """Unified score class for parsing, building, and playing music."""
+
+    # === Construction: Multiple Input Sources ===
+
+    @classmethod
+    def from_source(cls, source: str, filename: str = "<input>") -> "Score":
+        """Create from Alda source code (current implementation)."""
+        ...
+
+    @classmethod
+    def from_file(cls, path: str | Path) -> "Score":
+        """Create from .alda or .mid file."""
+        path = Path(path)
+        if path.suffix == ".alda":
+            return cls.from_source(path.read_text(), filename=str(path))
+        elif path.suffix in (".mid", ".midi"):
+            return cls._from_midi_file(path)
+        raise ValueError(f"Unsupported file type: {path.suffix}")
+
+    @classmethod
+    def from_elements(cls, *elements) -> "Score":
+        """Create from compose domain objects (notes, parts, etc.)."""
+        score = cls.__new__(cls)
+        score._elements = list(elements)
+        return score
+
+    @classmethod
+    def from_parts(cls, *parts: "Part") -> "Score":
+        """Create from Part objects."""
+        return cls.from_elements(*parts)
+
+    @classmethod
+    def from_midi_file(cls, path: str | Path) -> "Score":
+        """Import a MIDI file (future)."""
+        raise NotImplementedError("MIDI import not yet implemented")
+
+    # === Builder Methods (return self for chaining) ===
 
     def add(self, *elements) -> "Score":
         """Add elements to the score."""
-        self.elements.extend(elements)
+        self._elements.extend(elements)
         return self
 
-    def part(self, *instruments, alias=None) -> "Score":
+    def with_part(self, *instruments, alias: str | None = None) -> "Score":
         """Add a part declaration."""
         return self.add(Part(*instruments, alias=alias))
 
-    def notes(self, alda_string: str) -> "Score":
-        """Parse and add notes from Alda syntax."""
-        # Convenience for quick note entry
-        return self.add(seq.from_alda(alda_string))
-
-    def tempo(self, bpm: int, global_=False) -> "Score":
+    def with_tempo(self, bpm: int, global_: bool = False) -> "Score":
+        """Add tempo attribute."""
         return self.add(tempo(bpm, global_=global_))
 
-    def var(self, name: str, *elements) -> "Score":
+    def with_notes(self, alda_string: str) -> "Score":
+        """Parse and add notes from Alda syntax snippet."""
+        parsed = parse(alda_string)
+        return self.add(*parsed.children)
+
+    def define(self, name: str, *elements) -> "Score":
         """Define a variable."""
-        self.variables[name] = seq(*elements)
+        self._variables[name] = seq(*elements)
         return self
 
     def use(self, name: str) -> "Score":
         """Reference a variable."""
         return self.add(VarRef(name))
 
-    # Output methods
+    # === Properties (lazy, cached) ===
+
+    @cached_property
+    def ast(self) -> "RootNode":
+        """The AST representation (built directly, not via text round-trip)."""
+        if hasattr(self, "_source"):
+            return parse(self._source, self._filename)
+        else:
+            return self._build_ast_from_elements()
+
+    @cached_property
+    def midi(self) -> "MidiSequence":
+        """The MIDI sequence."""
+        return generate_midi(self.ast)
+
+    @property
+    def duration(self) -> float:
+        """Total duration in seconds."""
+        return self.midi.duration()
+
+    # === Output Methods ===
 
     def to_alda(self) -> str:
         """Export as Alda source code."""
-        return "\n".join(e.to_alda() for e in self.elements)
+        if hasattr(self, "_source"):
+            return self._source
+        return "\n".join(e.to_alda() for e in self._elements)
 
-    def to_ast(self) -> "AldaAST":
-        """Convert to AST (for MIDI generation)."""
-        # Either parse to_alda() or build AST directly
-        ...
-
-    def to_midi(self) -> "MidiSequence":
-        """Generate MIDI sequence."""
-        from aldakit import generate_midi
-        return generate_midi(self.to_ast())
-
-    def play(self, backend=None):
+    def play(self, port: str | None = None, wait: bool = True) -> None:
         """Play the score."""
-        from aldakit import LibremidiBackend
-        backend = backend or LibremidiBackend()
-        backend.play(self.to_midi())
+        with LibremidiBackend(port_name=port) as backend:
+            backend.play(self.midi)
+            if wait:
+                while backend.is_playing():
+                    time.sleep(0.1)
 
-    def save(self, path: str):
+    def save(self, path: str | Path) -> None:
         """Save to file (.alda or .mid based on extension)."""
-        if path.endswith(".alda"):
-            Path(path).write_text(self.to_alda())
-        elif path.endswith(".mid"):
-            from aldakit import LibremidiBackend
-            LibremidiBackend().save(self.to_midi(), path)
+        path = Path(path)
+        if path.suffix == ".alda":
+            path.write_text(self.to_alda())
+        elif path.suffix in (".mid", ".midi"):
+            LibremidiBackend().save(self.midi, path)
+        else:
+            raise ValueError(f"Unsupported file type: {path.suffix}")
+
+    # === Private Methods ===
+
+    def _build_ast_from_elements(self) -> "RootNode":
+        """Build AST directly from compose elements (no text round-trip)."""
+        children = [e.to_ast() for e in self._elements]
+        return RootNode(children=children, position=None)
 ```
 
 ## Use Cases
@@ -233,30 +318,33 @@ class Score:
 
 ```python
 import random
-from aldakit.compose import Score, Part, note, chord, seq, tempo
+from aldakit import Score
+from aldakit.compose import note, chord, seq, part, tempo
 
 def random_melody(length=8, scale=["c", "d", "e", "f", "g", "a", "b"]):
     """Generate a random melody from a scale."""
-    return seq(*[note(random.choice(scale), 8) for _ in range(length)])
+    return seq(*[note(random.choice(scale), duration=8) for _ in range(length)])
 
 def arpeggiate(chord_notes, pattern=[0, 1, 2, 1]):
     """Arpeggiate a chord with a pattern."""
-    return seq(*[note(chord_notes[i % len(chord_notes)], 16) for i in pattern])
+    return seq(*[note(chord_notes[i % len(chord_notes)], duration=16) for i in pattern])
 
-score = Score()
-score.add(Part("piano"))
-score.add(tempo(120))
-score.add(random_melody(16))
-score.add(arpeggiate(["c", "e", "g"]) * 4)
+score = Score.from_elements(
+    part("piano"),
+    tempo(120),
+    random_melody(16),
+    arpeggiate(["c", "e", "g"]) * 4
+)
 score.play()
 ```
 
 ### 2. Data Sonification
 
 ```python
-from aldakit.compose import Score, Part, note, tempo
+from aldakit import Score
+from aldakit.compose import note, part, tempo
 
-def weather_to_music(temperatures: list[float]):
+def weather_to_music(temperatures: list[float]) -> Score:
     """Convert temperature data to music."""
     min_t, max_t = min(temperatures), max(temperatures)
 
@@ -264,14 +352,14 @@ def weather_to_music(temperatures: list[float]):
         # Map to pentatonic scale (C D E G A)
         scale = ["c", "d", "e", "g", "a"]
         idx = int((t - min_t) / (max_t - min_t) * (len(scale) - 1))
-        return note(scale[idx], 8)
+        return note(scale[idx], duration=8)
 
-    score = Score()
-    score.add(Part("vibraphone"))
-    score.add(tempo(140))
-    for t in temperatures:
-        score.add(temp_to_note(t))
-    return score
+    notes = [temp_to_note(t) for t in temperatures]
+    return Score.from_elements(
+        part("vibraphone"),
+        tempo(140),
+        *notes
+    )
 
 # Sonify a week of temperatures
 temps = [45, 52, 48, 61, 58, 55, 50]
@@ -281,35 +369,39 @@ weather_to_music(temps).play()
 ### 3. Music Theory Operations
 
 ```python
-from aldakit.compose import Score, Part, seq, rest
+from aldakit import Score
+from aldakit.compose import seq, rest, part
 from aldakit.compose.transform import transpose, invert, reverse
 
 # Define a motif
 motif = seq.from_alda("c8 d e- g")
 
 # Transform it
-motif_up = transpose(motif, 5)    # Up a fourth
-motif_inv = invert(motif)         # Invert intervals
-motif_ret = reverse(motif)        # Retrograde
+motif_up = transpose(motif, semitones=5)   # Up a fourth
+motif_inv = invert(motif)                   # Invert intervals
+motif_ret = reverse(motif)                  # Retrograde
 
 # Build a fugue-like structure
-score = Score()
-score.add(Part("piano"))
-score.add(motif)
-score.add(rest(2))
-score.add(motif_up)
-score.add(rest(2))
-score.add(motif_inv)
+score = Score.from_elements(
+    part("piano"),
+    motif,
+    rest(duration=2),
+    motif_up,
+    rest(duration=2),
+    motif_inv
+)
 score.play()
 ```
 
 ### 4. Live Coding / REPL Workflow
 
 ```python
->>> from aldakit.compose import Score, Part, note, chord, tempo
->>> s = Score()
->>> s.add(Part("piano"), tempo(120))
->>> s.add(note("c", 4), note("e"), note("g"))
+>>> from aldakit import Score
+>>> from aldakit.compose import note, chord, part, tempo
+
+# Start with empty score, build incrementally
+>>> s = Score.from_elements(part("piano"), tempo(120))
+>>> s.add(note("c", duration=4), note("e"), note("g"))
 >>> s.play()
 # Hear: C E G
 
@@ -327,40 +419,59 @@ c1/e/g
 ### 5. Interoperability with Alda
 
 ```python
-# Load an Alda file, modify it, save back
-from aldakit import parse
-from aldakit.compose import Score
+from aldakit import Score
+from aldakit.compose.transform import transpose
 
-# Parse existing Alda file to AST
-with open("song.alda") as f:
-    ast = parse(f.read())
+# Load an Alda file
+score = Score.from_file("song.alda")
 
-# Wrap in Score for manipulation (future feature)
-score = Score.from_ast(ast)
-score.transpose(2)  # Transpose entire score up 2 semitones
-score.save("song_transposed.alda")
+# Transpose entire score up 2 semitones
+transposed = transpose(score, semitones=2)
+
+# Save back to Alda or MIDI
+transposed.save("song_transposed.alda")
+transposed.save("song_transposed.mid")
 ```
 
 ## Implementation Strategy
 
-### Phase 1: Core Domain Objects
+### Phase 1: Core Domain Objects with Direct AST Generation
 
-1. Implement `note()`, `rest()`, `chord()`, `seq()` with `to_alda()` methods
-2. Implement `Part`, `tempo()`, `volume()`, and other attributes
-3. Implement `Score` class with `add()`, `to_alda()`, `play()`
+All domain objects implement `to_ast()` from the start - no text round-trip:
 
-### Phase 2: AST Integration
+1. Implement `note()`, `rest()`, `chord()`, `seq()` with `to_ast()` methods
+2. Implement `Part`, `tempo()`, `volume()`, and other attributes with `to_ast()`
+3. Extend `Score` class with `from_elements()`, `from_parts()`, builder methods
+4. Add `to_alda()` methods for debugging/export (generates text from AST, not vice versa)
 
-1. Add `to_ast()` methods that create AST nodes directly
-2. Bypass text parsing for better performance
-3. Ensure round-trip: `Score -> AST -> Alda text -> AST` produces equivalent results
+```python
+# Domain objects create AST nodes directly
+class Note:
+    def to_ast(self) -> NoteNode:
+        return NoteNode(
+            letter=self.pitch,
+            accidentals=self._accidentals_list(),
+            duration=self._duration_node(),
+            slurred=self.slurred,
+            position=None,
+        )
 
-### Phase 3: Transformers
+    def to_alda(self) -> str:
+        # For debugging/export only - derived from object state, not used for AST
+        return f"{self.pitch}{self._accidental_str()}{self._duration_str()}"
+```
+
+### Phase 2: AST-Level Transformers
 
 1. Pitch transformers: `transpose()`, `invert()`, `reverse()`, `shuffle()`
-2. Timing transformers: `quantize()`, `humanize()`, `swing()`, `stretch()`
-3. Velocity transformers: `accent()`, `crescendo()`, `diminuendo()`
-4. Structural transformers: `augment()`, `diminish()`, `fragment()`, `loop()`
+2. Structural transformers: `augment()`, `diminish()`, `fragment()`, `loop()`
+3. Located in `aldakit.compose.transform`
+
+### Phase 3: MIDI-Level Transformers
+
+1. Timing transformers: `quantize()`, `humanize()`, `swing()`, `stretch()`
+2. Velocity transformers: `accent()`, `crescendo()`, `diminuendo()`
+3. Located in `aldakit.midi.transform`
 
 ### Phase 4: Generative Functions
 
@@ -373,30 +484,69 @@ score.save("song_transposed.alda")
 
 1. Variables and references
 2. Markers and jumps
-3. Voices
+3. Voices (parallel lines within a part)
 4. Cram expressions (tuplets)
 5. Scale and mode helpers
 6. Chord voicing utilities
+
+### Phase 6: MIDI Import (Future)
+
+1. MIDI file import to AST
+2. Real-time MIDI transcription
 
 ## Module Structure
 
 ```text
 src/aldakit/
+  score.py              # Unified Score class (already exists, to be extended)
   compose/
-    __init__.py       # Public API exports
-    core.py           # note, rest, chord, seq
-    score.py          # Score class
-    part.py           # Part, Voice
-    attributes.py     # tempo, volume, octave, etc.
-    chords.py         # Chord constructors (major, minor, etc.)
-    theory.py         # transpose, invert, retrograde
-    transform.py      # MIDI transformers
-    generate.py       # Generative functions
+    __init__.py         # Public API: note, rest, chord, seq, part, tempo, etc.
+    core.py             # note(), rest(), chord(), seq() domain objects
+    part.py             # Part, Voice
+    attributes.py       # tempo(), volume(), octave(), dynamics
+    chords.py           # Chord constructors: major(), minor(), dom7(), etc.
+    transform.py        # AST-level transformers: transpose, invert, reverse
+    generate.py         # Generative functions: euclidean, markov, etc.
+  midi/
+    transform.py        # MIDI-level transformers: humanize, swing, quantize
 ```
 
 ## Transformers
 
-Transformers are functions that take a sequence (or MIDI data) and return a modified version. They operate on timing, pitch, velocity, and structure.
+Transformers are functions that take a sequence and return a modified version. They are
+organized into two categories based on what level they operate at:
+
+### AST-Level vs MIDI-Level Transformers
+
+| Level | Operates On | Examples | Reversible to Alda? |
+|-------|-------------|----------|---------------------|
+| **AST-Level** | Symbolic notation (notes, durations) | transpose, invert, reverse, augment | Yes |
+| **MIDI-Level** | Absolute timing (seconds, ticks) | humanize, swing, quantize | No (timing is baked in) |
+
+**AST-Level Transformers** modify the symbolic representation:
+- Work with note names, intervals, and relative durations
+- Output can be exported back to Alda source
+- Located in `aldakit.compose.transform`
+
+**MIDI-Level Transformers** modify the generated MIDI:
+- Work with absolute time (seconds), MIDI pitch numbers, velocities
+- Cannot be reversed to Alda (information is lost)
+- Located in `aldakit.midi.transform`
+
+```python
+from aldakit.compose.transform import transpose, reverse  # AST-level
+from aldakit.midi.transform import humanize, swing        # MIDI-level
+
+# AST-level: can export to Alda
+melody = seq.from_alda("c d e f g")
+transposed = transpose(melody, semitones=5)
+print(transposed.to_alda())  # "f g a a+ > c"
+
+# MIDI-level: works on MidiSequence
+midi_seq = score.midi
+humanized = humanize(midi_seq, timing=0.1, velocity=0.05)
+# Cannot convert back to Alda - timing is now in absolute seconds
+```
 
 ### Pitch Transformers
 
@@ -623,65 +773,68 @@ melody = cellular_automaton(
 ### Combining Generators
 
 ```python
-from aldakit.compose import Score
+from aldakit import Score
+from aldakit.compose import part
 from aldakit.compose.generate import euclidean, random_walk, markov_chain
 
 # Layer different generative techniques
-score = Score()
-score.add(part("drums"))
-score.add(euclidean(hits=5, steps=16, note="c"))  # Kick pattern
+score = Score.from_elements(
+    part("drums"),
+    euclidean(hits=5, steps=16, note="c"),  # Kick pattern
 
-score.add(part("bass"))
-score.add(random_walk(start="c", steps=16, octave=2))
+    part("bass"),
+    random_walk(start="c", steps=16, octave=2),
 
-score.add(part("piano"))
-chain = markov_chain(...)
-score.add(chain.generate(length=16))
+    part("piano"),
+    markov_chain({...}).generate(length=16)
+)
 
 score.play()
 ```
 
 ## Relationship to Existing Code
 
-The compose API complements the existing parser/generator:
+The compose API extends the existing parser/generator with programmatic construction:
 
 | Direction | Operation | Status |
 |-----------|-----------|--------|
 | Alda -> AST | `parse()` | Implemented |
-| AST -> MIDI Playback | `play()` | Implemented |
-| AST -> MIDI File | `save()` | Implemented |
-| AST -> Alda | `export()` | Planned |
-| Python API -> AST | `to_ast()` | Planned (compose module) |
-| Python API -> Alda | `to_alda()` | Planned (compose module) |
-| MIDI File -> AST | `import()` | Future |
-| MIDI Input -> AST | `transcribe()` | Future |
+| AST -> MIDI Playback | `Score.play()` | Implemented |
+| AST -> MIDI File | `Score.save()` | Implemented |
+| Alda File -> Score | `Score.from_file()` | Implemented |
+| Source String -> Score | `Score.from_source()` | Implemented |
+| Python Objects -> AST | `to_ast()` | Planned (compose module) |
+| Python Objects -> Alda | `to_alda()` | Planned (compose module) |
+| MIDI File -> Score | `Score.from_file()` | Future (Phase 6) |
+| MIDI Input -> Score | `transcribe()` | Future (Phase 6) |
 
 The parser remains essential for:
 
-- Loading `.alda` files
-- The `notes()` convenience method (parses Alda snippets)
+- The `Score.from_source()` constructor
+- The `seq.from_alda()` convenience method for parsing snippets
 - Interop with other Alda tools
 
-## Future: MIDI Import
+## Future: MIDI Import (Phase 6)
 
-The architecture supports two forms of MIDI import:
+The unified Score architecture supports MIDI import through the same interface:
 
 ### MIDI File Import
 
 ```python
-from aldakit import import_midi
+from aldakit import Score
+from aldakit.compose.transform import transpose
 
-# Import a MIDI file to AST
-ast = import_midi("recording.mid")
+# Import a MIDI file to Score
+score = Score.from_file("recording.mid")
 
 # Export to Alda for human-readable notation
-alda_source = export(ast)
-print(alda_source)
+print(score.to_alda())
 # Output: piano: c4 d e f | g2 r2
 
 # Or manipulate and re-export
-ast_transposed = transpose(ast, 5)
-save(ast_transposed, "transposed.mid")
+transposed = transpose(score, semitones=5)
+transposed.save("transposed.mid")
+transposed.save("transposed.alda")
 ```
 
 ### Real-time MIDI Transcription
@@ -691,8 +844,8 @@ from aldakit import MidiInput
 
 # Transcribe live MIDI input to Alda
 with MidiInput() as midi_in:
-    for ast_fragment in midi_in.transcribe():
-        print(export(ast_fragment))
+    for score_fragment in midi_in.transcribe():
+        print(score_fragment.to_alda())
         # Prints Alda notation as you play
 ```
 
@@ -704,10 +857,27 @@ These features would enable:
 
 ## Conclusion
 
-By treating the **AST as the central hub**, aldakit provides a unified platform where:
+By treating the **AST as the central hub** and the **Score as the unified interface**, aldakit provides a complete platform where:
 
-1. **Multiple inputs** (Alda text, Python API, MIDI) all flow into AST
-2. **Multiple outputs** (playback, MIDI files, Alda text) all derive from AST
-3. **Symmetric operations** enable round-trip transformations
+1. **Multiple inputs** (Alda text, Python API, MIDI files) all flow through `Score.from_*()` constructors
+2. **Multiple outputs** (playback, MIDI files, Alda text) all derive from `Score` methods
+3. **Transformations** operate at appropriate levels (AST for symbolic, MIDI for timing)
+4. **Symmetric operations** enable round-trip transformations
+
+```python
+from aldakit import Score
+
+# All roads lead to Score
+score = Score.from_source("piano: c d e")       # From Alda text
+score = Score.from_file("song.alda")            # From Alda file
+score = Score.from_file("song.mid")             # From MIDI file (future)
+score = Score.from_elements(part, tempo, notes) # From Python objects
+
+# All outputs derive from Score
+score.play()                 # Playback
+score.save("out.mid")        # MIDI file
+score.save("out.alda")       # Alda text
+print(score.to_alda())       # Alda string
+```
 
 This positions aldakit as a complete platform for music programming in Python, whether you prefer text-based notation, programmatic construction, or MIDI-based workflows.

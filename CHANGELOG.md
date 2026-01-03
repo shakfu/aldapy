@@ -13,16 +13,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - New `Score` class for working with Alda music (`from aldakit import Score`)
   - `Score(source)` and `Score.from_file(path)` constructors
+  - `Score.from_elements(*elements)` for programmatic composition
+  - `Score.from_parts(*parts)` convenience constructor
   - `play(port=None, wait=True)` method for MIDI playback
-  - `save(path)` method for MIDI file export
+  - `save(path)` method for MIDI/Alda file export
+  - `to_alda()` method for Alda source code export
   - Lazy `ast` and `midi` properties (computed and cached on first access)
   - `duration` property for total score length in seconds
+  - Builder methods: `add()`, `with_part()`, `with_tempo()`, `with_volume()`
 - Module-level convenience functions for one-liner usage:
   - `aldakit.play(source)` - parse and play Alda code
   - `aldakit.play_file(path)` - parse and play an Alda file
   - `aldakit.save(source, path)` - parse and save as MIDI
   - `aldakit.save_file(source_path, output_path)` - convert Alda file to MIDI
   - `aldakit.list_ports()` - list available MIDI output ports
+
+#### Compose Module (`aldakit.compose`)
+
+Programmatic music composition with domain objects that generate AST directly (no text parsing):
+
+- **Core elements:**
+  - `note(pitch, *, duration, octave, accidental, dots, ms, seconds, slurred)` - create notes
+  - `rest(*, duration, dots, ms, seconds)` - create rests
+  - `chord(*notes_or_pitches, duration)` - create chords
+  - `seq(*elements)` - create sequences
+  - `Seq.from_alda(source)` - parse Alda into a sequence
+- **Part declarations:**
+  - `part(*instruments, alias)` - instrument declarations
+- **Attributes:**
+  - `tempo(bpm, global_)` - tempo setting
+  - `volume(level)` / `vol(level)` - volume control
+  - `octave(n)` - set octave
+  - `octave_up()` / `octave_down()` - relative octave changes
+  - `quant(level)` - quantization/legato
+  - `panning(level)` - stereo panning
+  - Dynamic markings: `pp()`, `p()`, `mp()`, `mf()`, `f()`, `ff()`
+- **Transformations:**
+  - `Note.sharpen()` / `Note.flatten()` - accidental changes
+  - `Note.transpose(semitones)` - pitch transposition
+  - `Note.with_duration(n)` / `Note.with_octave(n)` - property changes
+  - `note * n` / `seq * n` - repeat syntax
+- **Output methods:**
+  - `to_ast()` - generate AST node directly
+  - `to_alda()` - generate Alda source code
 
 ## [0.1.3]
 

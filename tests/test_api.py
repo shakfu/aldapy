@@ -113,7 +113,9 @@ class TestScore:
 
         mock_backend.save.assert_called_once()
         call_args = mock_backend.save.call_args
-        assert call_args[0][1] == "output.mid"
+        from pathlib import Path
+
+        assert call_args[0][1] == Path("output.mid")
 
 
 class TestModuleFunctions:

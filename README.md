@@ -81,6 +81,54 @@ print(score.ast)   # Parsed AST
 print(score.midi)  # MIDI sequence
 ```
 
+### Programmatic Composition
+
+Build music programmatically using the compose module:
+
+```python
+from aldakit import Score
+from aldakit.compose import part, note, rest, chord, seq, tempo, volume
+
+# Create a score from compose elements
+score = Score.from_elements(
+    part("piano"),
+    tempo(120),
+    note("c", duration=4),
+    note("d"),
+    note("e"),
+    chord("c", "e", "g", duration=2),
+)
+score.play()
+
+# Builder pattern with method chaining
+score = (
+    Score.from_elements(part("violin"))
+    .with_tempo(90)
+    .add(note("g", duration=8), note("a"), note("b"))
+)
+
+# Note transformations
+c = note("c", duration=4)
+c_sharp = c.sharpen()           # C#
+c_up_octave = c.transpose(12)   # Up one octave
+
+# Repeat syntax
+pattern = seq(note("c"), note("d"), note("e"))
+repeated = pattern * 4  # Repeat 4 times
+
+# Export to Alda source
+print(score.to_alda())  # "violin: (tempo 90) g8 a b"
+```
+
+Available compose elements:
+- **Notes**: `note("c", duration=4, octave=5, accidental="+", dots=1)`
+- **Rests**: `rest(duration=4)`, `rest(ms=500)`
+- **Chords**: `chord("c", "e", "g")`, `chord(note("c"), note("e", accidental="+"))`
+- **Sequences**: `seq(note("c"), note("d"))`, `Seq.from_alda("c d e")`
+- **Parts**: `part("piano")`, `part("violin", alias="v1")`
+- **Attributes**: `tempo(120)`, `volume(80)`, `octave(5)`, `panning(50)`
+- **Dynamics**: `pp()`, `p()`, `mp()`, `mf()`, `f()`, `ff()`
+
 ## CLI Reference
 
 ```sh
