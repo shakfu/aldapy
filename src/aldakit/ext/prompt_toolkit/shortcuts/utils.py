@@ -6,25 +6,17 @@ from typing import TYPE_CHECKING, Any, TextIO
 from prompt_toolkit.application import Application
 from prompt_toolkit.application.current import get_app_or_none, get_app_session
 from prompt_toolkit.application.run_in_terminal import run_in_terminal
-from prompt_toolkit.formatted_text import (
-    FormattedText,
-    StyleAndTextTuples,
-    to_formatted_text,
-)
+from prompt_toolkit.formatted_text import (FormattedText, StyleAndTextTuples,
+                                           to_formatted_text)
 from prompt_toolkit.input import DummyInput
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.output import ColorDepth, Output
 from prompt_toolkit.output.defaults import create_output
-from prompt_toolkit.renderer import (
-    print_formatted_text as renderer_print_formatted_text,
-)
-from prompt_toolkit.styles import (
-    BaseStyle,
-    StyleTransformation,
-    default_pygments_style,
-    default_ui_style,
-    merge_styles,
-)
+from prompt_toolkit.renderer import \
+    print_formatted_text as renderer_print_formatted_text
+from prompt_toolkit.styles import (BaseStyle, StyleTransformation,
+                                   default_pygments_style, default_ui_style,
+                                   merge_styles)
 
 if TYPE_CHECKING:
     from prompt_toolkit.layout.containers import AnyContainer

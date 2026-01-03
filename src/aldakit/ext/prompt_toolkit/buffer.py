@@ -23,13 +23,8 @@ from .application.run_in_terminal import run_in_terminal
 from .auto_suggest import AutoSuggest, Suggestion
 from .cache import FastDictCache
 from .clipboard import ClipboardData
-from .completion import (
-    CompleteEvent,
-    Completer,
-    Completion,
-    DummyCompleter,
-    get_common_complete_suffix,
-)
+from .completion import (CompleteEvent, Completer, Completion, DummyCompleter,
+                         get_common_complete_suffix)
 from .document import Document
 from .eventloop import aclosing
 from .filters import FilterOrBool, to_filter

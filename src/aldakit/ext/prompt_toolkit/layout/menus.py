@@ -9,18 +9,11 @@ from prompt_toolkit.application.current import get_app
 from prompt_toolkit.buffer import CompletionState
 from prompt_toolkit.completion import Completion
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import (
-    Condition,
-    FilterOrBool,
-    has_completions,
-    is_done,
-    to_filter,
-)
-from prompt_toolkit.formatted_text import (
-    StyleAndTextTuples,
-    fragment_list_width,
-    to_formatted_text,
-)
+from prompt_toolkit.filters import (Condition, FilterOrBool, has_completions,
+                                    is_done, to_filter)
+from prompt_toolkit.formatted_text import (StyleAndTextTuples,
+                                           fragment_list_width,
+                                           to_formatted_text)
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
@@ -32,10 +25,8 @@ from .dimension import Dimension
 from .margins import ScrollbarMargin
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding.key_bindings import (
-        KeyBindings,
-        NotImplementedOrNone,
-    )
+    from prompt_toolkit.key_binding.key_bindings import (KeyBindings,
+                                                         NotImplementedOrNone)
 
 
 __all__ = [

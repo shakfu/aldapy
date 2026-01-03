@@ -18,12 +18,8 @@ from prompt_toolkit.formatted_text import AnyFormattedText, to_formatted_text
 from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.layout.screen import Char, Screen, WritePosition
 from prompt_toolkit.output import ColorDepth, Output
-from prompt_toolkit.styles import (
-    Attrs,
-    BaseStyle,
-    DummyStyleTransformation,
-    StyleTransformation,
-)
+from prompt_toolkit.styles import (Attrs, BaseStyle, DummyStyleTransformation,
+                                   StyleTransformation)
 
 if TYPE_CHECKING:
     from prompt_toolkit.application import Application

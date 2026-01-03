@@ -10,24 +10,11 @@ from .base import ComposeElement
 if TYPE_CHECKING:
     pass
 
-from ..ast_nodes import (
-    NoteNode,
-    RestNode,
-    ChordNode,
-    EventSequenceNode,
-    DurationNode,
-    NoteLengthNode,
-    NoteLengthMsNode,
-    NoteLengthSecondsNode,
-    RepeatNode,
-    CramNode,
-    VoiceNode,
-    VoiceGroupNode,
-    VariableDefinitionNode,
-    VariableReferenceNode,
-    MarkerNode,
-    AtMarkerNode,
-)
+from ..ast_nodes import (AtMarkerNode, ChordNode, CramNode, DurationNode,
+                         EventSequenceNode, MarkerNode, NoteLengthMsNode,
+                         NoteLengthNode, NoteLengthSecondsNode, NoteNode,
+                         RepeatNode, RestNode, VariableDefinitionNode,
+                         VariableReferenceNode, VoiceGroupNode, VoiceNode)
 
 # Pitch to semitone offset from C
 _PITCH_OFFSETS = {"c": 0, "d": 2, "e": 4, "f": 5, "g": 7, "a": 9, "b": 11}
@@ -373,7 +360,8 @@ class _ParsedSeq(Seq):
     def to_ast(self) -> EventSequenceNode:
         """Return the parsed AST."""
         # The parsed AST is a RootNode, return its contents as EventSequenceNode
-        from ..ast_nodes import RootNode, EventSequenceNode as ESN
+        from ..ast_nodes import EventSequenceNode as ESN
+        from ..ast_nodes import RootNode
 
         if isinstance(self.ast, RootNode):
             # Flatten RootNode children into EventSequenceNode

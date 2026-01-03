@@ -10,12 +10,9 @@ import time
 from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.formatted_text import (
-    HTML,
-    AnyFormattedText,
-    StyleAndTextTuples,
-    to_formatted_text,
-)
+from prompt_toolkit.formatted_text import (HTML, AnyFormattedText,
+                                           StyleAndTextTuples,
+                                           to_formatted_text)
 from prompt_toolkit.formatted_text.utils import fragment_list_width
 from prompt_toolkit.layout.dimension import AnyDimension, D
 from prompt_toolkit.layout.utils import explode_text_fragments

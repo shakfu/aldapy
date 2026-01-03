@@ -17,144 +17,34 @@ Examples:
     >>> score.play()
 """
 
+from .attributes import (Dynamic, OctaveDown, OctaveSet, OctaveUp, Panning,
+                         Quant, Tempo, Volume, f, ff, mf, mp, octave,
+                         octave_down, octave_up, p, panning, pp, quant, tempo,
+                         vol, volume)
 from .base import ComposeElement
-from .core import (
-    Note,
-    Rest,
-    Chord,
-    Seq,
-    Repeat,
-    Cram,
-    Voice,
-    VoiceGroup,
-    Variable,
-    VariableRef,
-    Marker,
-    AtMarker,
-    note,
-    rest,
-    chord,
-    seq,
-    cram,
-    voice,
-    voice_group,
-    var,
-    var_ref,
-    marker,
-    at_marker,
-)
+from .chords import (CHORD_INTERVALS, add9, arpeggiate, aug, aug7, build_chord,
+                     dim, dim7, dom7, dom9, half_dim7)
+from .chords import invert as invert_chord
+from .chords import (list_chord_types, maj6, maj7, maj9, major, min6, min7,
+                     min9, min_maj7, minor, power, sus2, sus4, voicing)
+from .core import (AtMarker, Chord, Cram, Marker, Note, Repeat, Rest, Seq,
+                   Variable, VariableRef, Voice, VoiceGroup, at_marker, chord,
+                   cram, marker, note, rest, seq, var, var_ref, voice,
+                   voice_group)
+from .generate import (  # Random selection; Random walks; Rhythmic generators; Markov chains; L-Systems; Cellular automata; Shift registers
+    MarkovChain, cellular_automaton, drunk_walk, euclidean, learn_markov,
+    lsystem, markov_chain, probability_seq, random_choice, random_note,
+    random_walk, rest_probability, shift_register, turing_machine,
+    weighted_choice)
 from .part import Part, part
-from .attributes import (
-    Tempo,
-    Volume,
-    Quant,
-    Panning,
-    OctaveSet,
-    OctaveUp,
-    OctaveDown,
-    Dynamic,
-    tempo,
-    volume,
-    vol,
-    quant,
-    panning,
-    octave,
-    octave_up,
-    octave_down,
-    pp,
-    p,
-    mp,
-    mf,
-    f,
-    ff,
-)
-from .transform import (
-    # Pitch transformers
-    transpose,
-    invert,
-    reverse,
-    shuffle,
-    retrograde_inversion,
-    # Structural transformers
-    augment,
-    diminish,
-    fragment,
-    loop,
-    interleave,
-    rotate,
-    take_every,
-    split,
-    concat,
-    # Helpers
-    pipe,
-    identity,
-)
-from .generate import (
-    # Random selection
-    random_note,
-    random_choice,
-    weighted_choice,
-    # Random walks
-    random_walk,
-    drunk_walk,
-    # Rhythmic generators
-    euclidean,
-    probability_seq,
-    rest_probability,
-    # Markov chains
-    MarkovChain,
-    markov_chain,
-    learn_markov,
-    # L-Systems
-    lsystem,
-    # Cellular automata
-    cellular_automaton,
-    # Shift registers
-    shift_register,
-    turing_machine,
-)
-from .scales import (
-    scale,
-    scale_notes,
-    scale_degree,
-    mode,
-    relative_minor,
-    relative_major,
-    parallel_minor,
-    parallel_major,
-    transpose_scale,
-    interval_name,
-    list_scales,
-    SCALE_INTERVALS,
-)
-from .chords import (
-    build_chord,
-    major,
-    minor,
-    dim,
-    aug,
-    sus2,
-    sus4,
-    maj7,
-    min7,
-    dom7,
-    dim7,
-    half_dim7,
-    min_maj7,
-    aug7,
-    maj6,
-    min6,
-    dom9,
-    maj9,
-    min9,
-    add9,
-    power,
-    arpeggiate,
-    invert as invert_chord,
-    voicing,
-    list_chord_types,
-    CHORD_INTERVALS,
-)
+from .scales import (SCALE_INTERVALS, interval_name, list_scales, mode,
+                     parallel_major, parallel_minor, relative_major,
+                     relative_minor, scale, scale_degree, scale_notes,
+                     transpose_scale)
+from .transform import (  # Pitch transformers; Structural transformers; Helpers
+    augment, concat, diminish, fragment, identity, interleave, invert, loop,
+    pipe, retrograde_inversion, reverse, rotate, shuffle, split, take_every,
+    transpose)
 
 __all__ = [
     # Base

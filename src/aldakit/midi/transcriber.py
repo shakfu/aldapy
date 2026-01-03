@@ -6,10 +6,13 @@ import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable
 
-from .._libremidi import MidiIn, MidiMessage, Observer  # type: ignore[import-untyped]
-from .midi_to_ast import midi_pitch_to_note
+from .._libremidi import (MidiIn, MidiMessage,  # type: ignore[import-untyped]
+                          Observer)
+from ..compose.attributes import Tempo
 from ..compose.core import Note, Rest, Seq
 from ..compose.part import Part
+from ..score import Score
+from .midi_to_ast import midi_pitch_to_note
 
 if TYPE_CHECKING:
     from ..score import Score
@@ -316,7 +319,6 @@ def transcribe(
         >>> score = transcribe(duration=10)
         >>> score.play()
     """
-    from ..score import Score
 
     session = TranscribeSession(
         port_name=port_name,
@@ -338,7 +340,6 @@ def transcribe(
     seq = session.stop()
 
     # Build a Score from the recorded notes
-    from ..compose.attributes import Tempo
 
     elements = [Part(instruments=(instrument,)), Tempo(bpm=tempo)]
     elements.extend(seq.elements)

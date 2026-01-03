@@ -8,14 +8,11 @@ from typing import Sequence
 
 from prompt_toolkit.filters import has_completions, has_focus
 from prompt_toolkit.formatted_text import AnyFormattedText
-from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
+from prompt_toolkit.key_binding.bindings.focus import (focus_next,
+                                                       focus_previous)
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
-from prompt_toolkit.layout.containers import (
-    AnyContainer,
-    DynamicContainer,
-    HSplit,
-    VSplit,
-)
+from prompt_toolkit.layout.containers import (AnyContainer, DynamicContainer,
+                                              HSplit, VSplit)
 from prompt_toolkit.layout.dimension import AnyDimension
 from prompt_toolkit.layout.dimension import Dimension as D
 

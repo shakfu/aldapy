@@ -6,23 +6,14 @@ long pages, like in Emacs or Vi.
 from __future__ import annotations
 
 from prompt_toolkit.filters import buffer_has_focus, emacs_mode, vi_mode
-from prompt_toolkit.key_binding.key_bindings import (
-    ConditionalKeyBindings,
-    KeyBindings,
-    KeyBindingsBase,
-    merge_key_bindings,
-)
+from prompt_toolkit.key_binding.key_bindings import (ConditionalKeyBindings,
+                                                     KeyBindings,
+                                                     KeyBindingsBase,
+                                                     merge_key_bindings)
 
-from .scroll import (
-    scroll_backward,
-    scroll_forward,
-    scroll_half_page_down,
-    scroll_half_page_up,
-    scroll_one_line_down,
-    scroll_one_line_up,
-    scroll_page_down,
-    scroll_page_up,
-)
+from .scroll import (scroll_backward, scroll_forward, scroll_half_page_down,
+                     scroll_half_page_up, scroll_one_line_down,
+                     scroll_one_line_up, scroll_page_down, scroll_page_up)
 
 __all__ = [
     "load_page_navigation_bindings",

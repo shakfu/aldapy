@@ -15,7 +15,6 @@ from typing import Callable
 
 from .types import MidiNote, MidiSequence
 
-
 # =============================================================================
 # Timing Transformers
 # =============================================================================

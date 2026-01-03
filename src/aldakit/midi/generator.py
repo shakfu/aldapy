@@ -2,43 +2,18 @@
 
 from dataclasses import dataclass, field
 
-from ..ast_nodes import (
-    ASTNode,
-    RootNode,
-    PartNode,
-    EventSequenceNode,
-    NoteNode,
-    RestNode,
-    ChordNode,
-    DurationNode,
-    NoteLengthNode,
-    NoteLengthMsNode,
-    NoteLengthSecondsNode,
-    BarlineNode,
-    OctaveSetNode,
-    OctaveUpNode,
-    OctaveDownNode,
-    LispListNode,
-    LispSymbolNode,
-    LispNumberNode,
-    VariableDefinitionNode,
-    VariableReferenceNode,
-    MarkerNode,
-    AtMarkerNode,
-    VoiceGroupNode,
-    CramNode,
-    RepeatNode,
-    OnRepetitionsNode,
-    BracketedSequenceNode,
-)
-from ..midi.types import (
-    MidiSequence,
-    MidiNote,
-    MidiProgramChange,
-    MidiTempoChange,
-    INSTRUMENT_PROGRAMS,
-    note_to_midi,
-)
+from ..ast_nodes import (ASTNode, AtMarkerNode, BarlineNode,
+                         BracketedSequenceNode, ChordNode, CramNode,
+                         DurationNode, EventSequenceNode, LispListNode,
+                         LispNumberNode, LispSymbolNode, MarkerNode,
+                         NoteLengthMsNode, NoteLengthNode,
+                         NoteLengthSecondsNode, NoteNode, OctaveDownNode,
+                         OctaveSetNode, OctaveUpNode, OnRepetitionsNode,
+                         PartNode, RepeatNode, RestNode, RootNode,
+                         VariableDefinitionNode, VariableReferenceNode,
+                         VoiceGroupNode)
+from ..midi.types import (INSTRUMENT_PROGRAMS, MidiNote, MidiProgramChange,
+                          MidiSequence, MidiTempoChange, note_to_midi)
 
 
 @dataclass

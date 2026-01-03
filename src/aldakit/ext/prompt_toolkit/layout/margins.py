@@ -8,11 +8,9 @@ from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING, Callable
 
 from prompt_toolkit.filters import FilterOrBool, to_filter
-from prompt_toolkit.formatted_text import (
-    StyleAndTextTuples,
-    fragment_list_to_text,
-    to_formatted_text,
-)
+from prompt_toolkit.formatted_text import (StyleAndTextTuples,
+                                           fragment_list_to_text,
+                                           to_formatted_text)
 from prompt_toolkit.utils import get_cwidth
 
 from .controls import UIContent

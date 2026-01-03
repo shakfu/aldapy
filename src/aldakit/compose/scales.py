@@ -6,9 +6,7 @@ making it easy to generate melodies within specific tonal contexts.
 
 from __future__ import annotations
 
-
 from .core import Seq, note
-
 
 # =============================================================================
 # Scale Definitions

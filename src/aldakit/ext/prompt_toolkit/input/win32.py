@@ -25,13 +25,9 @@ from prompt_toolkit.eventloop.win32 import create_win32_event, wait_for_handles
 from prompt_toolkit.key_binding.key_processor import KeyPress
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
-from prompt_toolkit.win32_types import (
-    INPUT_RECORD,
-    KEY_EVENT_RECORD,
-    MOUSE_EVENT_RECORD,
-    STD_INPUT_HANDLE,
-    EventTypes,
-)
+from prompt_toolkit.win32_types import (INPUT_RECORD, KEY_EVENT_RECORD,
+                                        MOUSE_EVENT_RECORD, STD_INPUT_HANDLE,
+                                        EventTypes)
 
 from .ansi_escape_sequences import REVERSE_ANSI_SEQUENCES
 from .base import Input

@@ -4,33 +4,22 @@ Styling for prompt_toolkit applications.
 
 from __future__ import annotations
 
-from .base import (
-    ANSI_COLOR_NAMES,
-    DEFAULT_ATTRS,
-    Attrs,
-    BaseStyle,
-    DummyStyle,
-    DynamicStyle,
-)
+from .base import (ANSI_COLOR_NAMES, DEFAULT_ATTRS, Attrs, BaseStyle,
+                   DummyStyle, DynamicStyle)
 from .defaults import default_pygments_style, default_ui_style
 from .named_colors import NAMED_COLORS
-from .pygments import (
-    pygments_token_to_classname,
-    style_from_pygments_cls,
-    style_from_pygments_dict,
-)
+from .pygments import (pygments_token_to_classname, style_from_pygments_cls,
+                       style_from_pygments_dict)
 from .style import Priority, Style, merge_styles, parse_color
-from .style_transformation import (
-    AdjustBrightnessStyleTransformation,
-    ConditionalStyleTransformation,
-    DummyStyleTransformation,
-    DynamicStyleTransformation,
-    ReverseStyleTransformation,
-    SetDefaultColorStyleTransformation,
-    StyleTransformation,
-    SwapLightAndDarkStyleTransformation,
-    merge_style_transformations,
-)
+from .style_transformation import (AdjustBrightnessStyleTransformation,
+                                   ConditionalStyleTransformation,
+                                   DummyStyleTransformation,
+                                   DynamicStyleTransformation,
+                                   ReverseStyleTransformation,
+                                   SetDefaultColorStyleTransformation,
+                                   StyleTransformation,
+                                   SwapLightAndDarkStyleTransformation,
+                                   merge_style_transformations)
 
 __all__ = [
     # Base.

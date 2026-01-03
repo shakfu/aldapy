@@ -11,25 +11,19 @@ from prompt_toolkit.completion import Completer
 from prompt_toolkit.eventloop import run_in_executor_with_context
 from prompt_toolkit.filters import FilterOrBool
 from prompt_toolkit.formatted_text import AnyFormattedText
-from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
+from prompt_toolkit.key_binding.bindings.focus import (focus_next,
+                                                       focus_previous)
 from prompt_toolkit.key_binding.defaults import load_key_bindings
-from prompt_toolkit.key_binding.key_bindings import KeyBindings, merge_key_bindings
+from prompt_toolkit.key_binding.key_bindings import (KeyBindings,
+                                                     merge_key_bindings)
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import AnyContainer, HSplit
 from prompt_toolkit.layout.dimension import Dimension as D
 from prompt_toolkit.styles import BaseStyle
 from prompt_toolkit.validation import Validator
-from prompt_toolkit.widgets import (
-    Box,
-    Button,
-    CheckboxList,
-    Dialog,
-    Label,
-    ProgressBar,
-    RadioList,
-    TextArea,
-    ValidationToolbar,
-)
+from prompt_toolkit.widgets import (Box, Button, CheckboxList, Dialog, Label,
+                                    ProgressBar, RadioList, TextArea,
+                                    ValidationToolbar)
 
 __all__ = [
     "yes_no_dialog",

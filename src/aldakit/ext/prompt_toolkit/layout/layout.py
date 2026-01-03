@@ -8,13 +8,8 @@ from typing import Generator, Iterable, Union
 
 from prompt_toolkit.buffer import Buffer
 
-from .containers import (
-    AnyContainer,
-    ConditionalContainer,
-    Container,
-    Window,
-    to_container,
-)
+from .containers import (AnyContainer, ConditionalContainer, Container, Window,
+                         to_container)
 from .controls import BufferControl, SearchBufferControl, UIControl
 
 __all__ = [

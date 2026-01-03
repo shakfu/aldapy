@@ -5,9 +5,9 @@ import sys
 import time
 from pathlib import Path
 
-from . import parse, generate_midi
-from .midi import LibremidiBackend
+from . import generate_midi, parse
 from .errors import AldaParseError
+from .midi import LibremidiBackend
 
 
 def create_parser() -> argparse.ArgumentParser:

@@ -2,17 +2,12 @@
 
 from __future__ import annotations
 
+import struct
 from dataclasses import dataclass
 from pathlib import Path
-import struct
 
-from .types import (
-    MidiSequence,
-    MidiNote,
-    MidiProgramChange,
-    MidiControlChange,
-    MidiTempoChange,
-)
+from .types import (MidiControlChange, MidiNote, MidiProgramChange,
+                    MidiSequence, MidiTempoChange)
 
 
 class MidiParseError(Exception):

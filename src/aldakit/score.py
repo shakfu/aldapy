@@ -7,14 +7,14 @@ from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from .parser import parse
-from .midi.generator import generate_midi
+from .ast_nodes import EventSequenceNode, RootNode
 from .midi.backends import LibremidiBackend
-from .ast_nodes import RootNode, EventSequenceNode
+from .midi.generator import generate_midi
+from .parser import parse
 
 if TYPE_CHECKING:
-    from .midi.types import MidiSequence
     from .compose.base import ComposeElement
+    from .midi.types import MidiSequence
 
 
 # Mode constants for internal state
@@ -25,20 +25,10 @@ _MODE_MIDI = "midi"
 
 def _ast_to_alda(ast: RootNode) -> str:
     """Convert an AST back to Alda source code."""
-    from .ast_nodes import (
-        PartDeclarationNode,
-        NoteNode,
-        RestNode,
-        ChordNode,
-        DurationNode,
-        NoteLengthNode,
-        LispListNode,
-        LispSymbolNode,
-        LispNumberNode,
-        OctaveSetNode,
-        OctaveUpNode,
-        OctaveDownNode,
-    )
+    from .ast_nodes import (ChordNode, DurationNode, LispListNode,
+                            LispNumberNode, LispSymbolNode, NoteLengthNode,
+                            NoteNode, OctaveDownNode, OctaveSetNode,
+                            OctaveUpNode, PartDeclarationNode, RestNode)
 
     def duration_to_str(d: DurationNode | None) -> str:
         if d is None:
@@ -230,8 +220,8 @@ class Score:
             >>> print(score.to_alda())
             >>> score.play()
         """
-        from .midi.smf_reader import read_midi_file
         from .midi.midi_to_ast import midi_to_ast
+        from .midi.smf_reader import read_midi_file
 
         path = Path(path)
         midi_sequence = read_midi_file(path)

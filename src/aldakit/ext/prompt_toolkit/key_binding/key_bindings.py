@@ -39,18 +39,8 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from inspect import isawaitable
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Coroutine,
-    Hashable,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import (TYPE_CHECKING, Any, Callable, Coroutine, Hashable,
+                    Sequence, Tuple, TypeVar, Union, cast)
 
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.filters import FilterOrBool, Never, to_filter

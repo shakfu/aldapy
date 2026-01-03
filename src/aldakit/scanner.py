@@ -1,7 +1,7 @@
 """Lexer for the Alda music programming language."""
 
-from .tokens import Token, TokenType, SourcePosition
 from .errors import AldaScanError
+from .tokens import SourcePosition, Token, TokenType
 
 
 class Scanner:

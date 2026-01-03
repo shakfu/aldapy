@@ -11,7 +11,7 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING, Callable, TypeVar
 
-from .core import Note, Rest, Seq, Chord
+from .core import Chord, Note, Rest, Seq
 
 if TYPE_CHECKING:
     pass

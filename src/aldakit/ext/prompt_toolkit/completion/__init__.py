@@ -1,16 +1,8 @@
 from __future__ import annotations
 
-from .base import (
-    CompleteEvent,
-    Completer,
-    Completion,
-    ConditionalCompleter,
-    DummyCompleter,
-    DynamicCompleter,
-    ThreadedCompleter,
-    get_common_complete_suffix,
-    merge_completers,
-)
+from .base import (CompleteEvent, Completer, Completion, ConditionalCompleter,
+                   DummyCompleter, DynamicCompleter, ThreadedCompleter,
+                   get_common_complete_suffix, merge_completers)
 from .deduplicate import DeduplicateCompleter
 from .filesystem import ExecutableCompleter, PathCompleter
 from .fuzzy_completer import FuzzyCompleter, FuzzyWordCompleter

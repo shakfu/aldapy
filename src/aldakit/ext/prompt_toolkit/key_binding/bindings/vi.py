@@ -11,29 +11,17 @@ from prompt_toolkit.application.current import get_app
 from prompt_toolkit.buffer import Buffer, indent, reshape_text, unindent
 from prompt_toolkit.clipboard import ClipboardData
 from prompt_toolkit.document import Document
-from prompt_toolkit.filters import (
-    Always,
-    Condition,
-    Filter,
-    has_arg,
-    is_read_only,
-    is_searching,
-)
-from prompt_toolkit.filters.app import (
-    in_paste_mode,
-    is_multiline,
-    vi_digraph_mode,
-    vi_insert_mode,
-    vi_insert_multiple_mode,
-    vi_mode,
-    vi_navigation_mode,
-    vi_recording_macro,
-    vi_replace_mode,
-    vi_replace_single_mode,
-    vi_search_direction_reversed,
-    vi_selection_mode,
-    vi_waiting_for_text_object_mode,
-)
+from prompt_toolkit.filters import (Always, Condition, Filter, has_arg,
+                                    is_read_only, is_searching)
+from prompt_toolkit.filters.app import (in_paste_mode, is_multiline,
+                                        vi_digraph_mode, vi_insert_mode,
+                                        vi_insert_multiple_mode, vi_mode,
+                                        vi_navigation_mode, vi_recording_macro,
+                                        vi_replace_mode,
+                                        vi_replace_single_mode,
+                                        vi_search_direction_reversed,
+                                        vi_selection_mode,
+                                        vi_waiting_for_text_object_mode)
 from prompt_toolkit.input.vt100_parser import Vt100Parser
 from prompt_toolkit.key_binding.digraphs import DIGRAPHS
 from prompt_toolkit.key_binding.key_processor import KeyPress, KeyPressEvent

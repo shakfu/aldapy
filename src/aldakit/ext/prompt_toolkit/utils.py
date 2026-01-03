@@ -5,15 +5,8 @@ import signal
 import sys
 import threading
 from collections import deque
-from typing import (
-    Callable,
-    ContextManager,
-    Dict,
-    Generator,
-    Generic,
-    TypeVar,
-    Union,
-)
+from typing import (Callable, ContextManager, Dict, Generator, Generic,
+                    TypeVar, Union)
 
 from wcwidth import wcwidth
 

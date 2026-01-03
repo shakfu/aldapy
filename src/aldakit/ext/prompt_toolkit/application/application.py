@@ -8,63 +8,42 @@ import signal
 import sys
 import threading
 import time
-from asyncio import (
-    AbstractEventLoop,
-    Future,
-    Task,
-    ensure_future,
-    get_running_loop,
-    sleep,
-)
+from asyncio import (AbstractEventLoop, Future, Task, ensure_future,
+                     get_running_loop, sleep)
 from contextlib import ExitStack, contextmanager
 from subprocess import Popen
 from traceback import format_tb
-from typing import (
-    Any,
-    Callable,
-    Coroutine,
-    Generator,
-    Generic,
-    Hashable,
-    Iterable,
-    Iterator,
-    TypeVar,
-    cast,
-    overload,
-)
+from typing import (Any, Callable, Coroutine, Generator, Generic, Hashable,
+                    Iterable, Iterator, TypeVar, cast, overload)
 
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.clipboard import Clipboard, InMemoryClipboard
-from prompt_toolkit.cursor_shapes import AnyCursorShapeConfig, to_cursor_shape_config
+from prompt_toolkit.cursor_shapes import (AnyCursorShapeConfig,
+                                          to_cursor_shape_config)
 from prompt_toolkit.data_structures import Size
 from prompt_toolkit.enums import EditingMode
-from prompt_toolkit.eventloop import (
-    InputHook,
-    get_traceback_from_context,
-    new_eventloop_with_inputhook,
-    run_in_executor_with_context,
-)
+from prompt_toolkit.eventloop import (InputHook, get_traceback_from_context,
+                                      new_eventloop_with_inputhook,
+                                      run_in_executor_with_context)
 from prompt_toolkit.eventloop.utils import call_soon_threadsafe
 from prompt_toolkit.filters import Condition, Filter, FilterOrBool, to_filter
 from prompt_toolkit.formatted_text import AnyFormattedText
 from prompt_toolkit.input.base import Input
 from prompt_toolkit.input.typeahead import get_typeahead, store_typeahead
-from prompt_toolkit.key_binding.bindings.page_navigation import (
-    load_page_navigation_bindings,
-)
+from prompt_toolkit.key_binding.bindings.page_navigation import \
+    load_page_navigation_bindings
 from prompt_toolkit.key_binding.defaults import load_key_bindings
 from prompt_toolkit.key_binding.emacs_state import EmacsState
-from prompt_toolkit.key_binding.key_bindings import (
-    Binding,
-    ConditionalKeyBindings,
-    GlobalOnlyKeyBindings,
-    KeyBindings,
-    KeyBindingsBase,
-    KeysTuple,
-    merge_key_bindings,
-)
-from prompt_toolkit.key_binding.key_processor import KeyPressEvent, KeyProcessor
+from prompt_toolkit.key_binding.key_bindings import (Binding,
+                                                     ConditionalKeyBindings,
+                                                     GlobalOnlyKeyBindings,
+                                                     KeyBindings,
+                                                     KeyBindingsBase,
+                                                     KeysTuple,
+                                                     merge_key_bindings)
+from prompt_toolkit.key_binding.key_processor import (KeyPressEvent,
+                                                      KeyProcessor)
 from prompt_toolkit.key_binding.vi_state import ViState
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.layout.containers import Container, Window
@@ -74,16 +53,10 @@ from prompt_toolkit.layout.layout import Layout, walk
 from prompt_toolkit.output import ColorDepth, Output
 from prompt_toolkit.renderer import Renderer, print_formatted_text
 from prompt_toolkit.search import SearchState
-from prompt_toolkit.styles import (
-    BaseStyle,
-    DummyStyle,
-    DummyStyleTransformation,
-    DynamicStyle,
-    StyleTransformation,
-    default_pygments_style,
-    default_ui_style,
-    merge_styles,
-)
+from prompt_toolkit.styles import (BaseStyle, DummyStyle,
+                                   DummyStyleTransformation, DynamicStyle,
+                                   StyleTransformation, default_pygments_style,
+                                   default_ui_style, merge_styles)
 from prompt_toolkit.utils import Event, in_main_thread
 
 from .current import get_app_session, set_app

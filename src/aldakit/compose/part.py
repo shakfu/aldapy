@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .base import ComposeElement
 from ..ast_nodes import PartDeclarationNode
+from .base import ComposeElement
 
 
 @dataclass(frozen=True)

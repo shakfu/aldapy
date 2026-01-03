@@ -42,20 +42,12 @@ Partial matches are possible::
 from __future__ import annotations
 
 import re
-from typing import Callable, Dict, Iterable, Iterator, Pattern, TypeVar, overload
+from typing import Callable, Dict, Iterable, Iterator
 from typing import Match as RegexMatch
+from typing import Pattern, TypeVar, overload
 
-from .regex_parser import (
-    AnyNode,
-    Lookahead,
-    Node,
-    NodeSequence,
-    Regex,
-    Repeat,
-    Variable,
-    parse_regex,
-    tokenize_regex,
-)
+from .regex_parser import (AnyNode, Lookahead, Node, NodeSequence, Regex,
+                           Repeat, Variable, parse_regex, tokenize_regex)
 
 __all__ = ["compile", "Match", "Variables"]
 

@@ -11,12 +11,8 @@ from typing import Iterable, cast
 
 from prompt_toolkit.utils import get_cwidth
 
-from .base import (
-    AnyFormattedText,
-    OneStyleAndTextTuple,
-    StyleAndTextTuples,
-    to_formatted_text,
-)
+from .base import (AnyFormattedText, OneStyleAndTextTuple, StyleAndTextTuples,
+                   to_formatted_text)
 
 __all__ = [
     "to_plain_text",

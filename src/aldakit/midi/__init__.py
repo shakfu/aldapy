@@ -1,17 +1,10 @@
 """MIDI generation and playback for Alda."""
 
-from .types import (
-    MidiSequence,
-    MidiNote,
-    MidiProgramChange,
-    MidiControlChange,
-    MidiTempoChange,
-    GeneralMidiProgram,
-    INSTRUMENT_PROGRAMS,
-    note_to_midi,
-)
+from .backends import LibremidiBackend, MidiBackend
 from .generator import MidiGenerator, generate_midi
-from .backends import MidiBackend, LibremidiBackend
+from .types import (INSTRUMENT_PROGRAMS, GeneralMidiProgram, MidiControlChange,
+                    MidiNote, MidiProgramChange, MidiSequence, MidiTempoChange,
+                    note_to_midi)
 
 __all__ = [
     # Types

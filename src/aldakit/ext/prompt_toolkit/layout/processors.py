@@ -15,13 +15,13 @@ from typing import TYPE_CHECKING, Callable, Hashable, cast
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.document import Document
-from prompt_toolkit.filters import FilterOrBool, to_filter, vi_insert_multiple_mode
-from prompt_toolkit.formatted_text import (
-    AnyFormattedText,
-    StyleAndTextTuples,
-    to_formatted_text,
-)
-from prompt_toolkit.formatted_text.utils import fragment_list_len, fragment_list_to_text
+from prompt_toolkit.filters import (FilterOrBool, to_filter,
+                                    vi_insert_multiple_mode)
+from prompt_toolkit.formatted_text import (AnyFormattedText,
+                                           StyleAndTextTuples,
+                                           to_formatted_text)
+from prompt_toolkit.formatted_text.utils import (fragment_list_len,
+                                                 fragment_list_to_text)
 from prompt_toolkit.search import SearchDirection
 from prompt_toolkit.utils import to_int, to_str
 

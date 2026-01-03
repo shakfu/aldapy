@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .score import Score
 from .midi.backends import LibremidiBackend
+from .score import Score
 
 
 def play(source: str, port: str | None = None, wait: bool = True) -> None:

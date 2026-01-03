@@ -3,24 +3,22 @@
 import time
 from pathlib import Path
 
-# Initialize vendored packages path
-from . import ext  # noqa: F401
-
 from prompt_toolkit import PromptSession
-from prompt_toolkit.history import FileHistory
-from prompt_toolkit.lexers import Lexer
-from prompt_toolkit.document import Document
 from prompt_toolkit.completion import Completer, Completion
-from prompt_toolkit.styles import Style
+from prompt_toolkit.document import Document
+from prompt_toolkit.history import FileHistory
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
+from prompt_toolkit.lexers import Lexer
+from prompt_toolkit.styles import Style
 
-from .parser import parse
-from .midi.generator import generate_midi
-from .midi.backends import LibremidiBackend
-from .midi.types import INSTRUMENT_PROGRAMS
+# Initialize vendored packages path
+from . import ext  # noqa: F401
 from .errors import AldaParseError
-
+from .midi.backends import LibremidiBackend
+from .midi.generator import generate_midi
+from .midi.types import INSTRUMENT_PROGRAMS
+from .parser import parse
 
 # Alda token colors - clean scheme
 ALDA_STYLE = Style.from_dict(

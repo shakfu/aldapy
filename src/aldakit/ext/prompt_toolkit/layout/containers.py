@@ -13,48 +13,29 @@ from typing import TYPE_CHECKING, Callable, Sequence, Union, cast
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import (
-    FilterOrBool,
-    emacs_insert_mode,
-    to_filter,
-    vi_insert_mode,
-)
-from prompt_toolkit.formatted_text import (
-    AnyFormattedText,
-    StyleAndTextTuples,
-    to_formatted_text,
-)
-from prompt_toolkit.formatted_text.utils import (
-    fragment_list_to_text,
-    fragment_list_width,
-)
+from prompt_toolkit.filters import (FilterOrBool, emacs_insert_mode, to_filter,
+                                    vi_insert_mode)
+from prompt_toolkit.formatted_text import (AnyFormattedText,
+                                           StyleAndTextTuples,
+                                           to_formatted_text)
+from prompt_toolkit.formatted_text.utils import (fragment_list_to_text,
+                                                 fragment_list_width)
 from prompt_toolkit.key_binding import KeyBindingsBase
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.utils import get_cwidth, take_using_weights, to_int, to_str
 
-from .controls import (
-    DummyControl,
-    FormattedTextControl,
-    GetLinePrefixCallable,
-    UIContent,
-    UIControl,
-)
-from .dimension import (
-    AnyDimension,
-    Dimension,
-    max_layout_dimensions,
-    sum_layout_dimensions,
-    to_dimension,
-)
+from .controls import (DummyControl, FormattedTextControl,
+                       GetLinePrefixCallable, UIContent, UIControl)
+from .dimension import (AnyDimension, Dimension, max_layout_dimensions,
+                        sum_layout_dimensions, to_dimension)
 from .margins import Margin
 from .mouse_handlers import MouseHandlers
 from .screen import _CHAR_CACHE, Screen, WritePosition
 from .utils import explode_text_fragments
 
 if TYPE_CHECKING:
-    from typing_extensions import Protocol, TypeGuard
-
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+    from typing_extensions import Protocol, TypeGuard
 
 
 __all__ = [

@@ -14,37 +14,26 @@ from prompt_toolkit.cache import SimpleCache
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import FilterOrBool, to_filter
-from prompt_toolkit.formatted_text import (
-    AnyFormattedText,
-    StyleAndTextTuples,
-    to_formatted_text,
-)
-from prompt_toolkit.formatted_text.utils import (
-    fragment_list_to_text,
-    fragment_list_width,
-    split_lines,
-)
+from prompt_toolkit.formatted_text import (AnyFormattedText,
+                                           StyleAndTextTuples,
+                                           to_formatted_text)
+from prompt_toolkit.formatted_text.utils import (fragment_list_to_text,
+                                                 fragment_list_width,
+                                                 split_lines)
 from prompt_toolkit.lexers import Lexer, SimpleLexer
 from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.search import SearchState
 from prompt_toolkit.selection import SelectionType
 from prompt_toolkit.utils import get_cwidth
 
-from .processors import (
-    DisplayMultipleCursors,
-    HighlightIncrementalSearchProcessor,
-    HighlightSearchProcessor,
-    HighlightSelectionProcessor,
-    Processor,
-    TransformationInput,
-    merge_processors,
-)
+from .processors import (DisplayMultipleCursors,
+                         HighlightIncrementalSearchProcessor,
+                         HighlightSearchProcessor, HighlightSelectionProcessor,
+                         Processor, TransformationInput, merge_processors)
 
 if TYPE_CHECKING:
-    from prompt_toolkit.key_binding.key_bindings import (
-        KeyBindingsBase,
-        NotImplementedOrNone,
-    )
+    from prompt_toolkit.key_binding.key_bindings import (KeyBindingsBase,
+                                                         NotImplementedOrNone)
     from prompt_toolkit.utils import Event
 
 

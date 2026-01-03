@@ -3,28 +3,16 @@ from __future__ import annotations
 from typing import Generic, Sequence, TypeVar
 
 from prompt_toolkit.application import Application
-from prompt_toolkit.filters import (
-    Condition,
-    FilterOrBool,
-    is_done,
-    renderer_height_is_known,
-    to_filter,
-)
+from prompt_toolkit.filters import (Condition, FilterOrBool, is_done,
+                                    renderer_height_is_known, to_filter)
 from prompt_toolkit.formatted_text import AnyFormattedText
-from prompt_toolkit.key_binding.key_bindings import (
-    DynamicKeyBindings,
-    KeyBindings,
-    KeyBindingsBase,
-    merge_key_bindings,
-)
+from prompt_toolkit.key_binding.key_bindings import (DynamicKeyBindings,
+                                                     KeyBindings,
+                                                     KeyBindingsBase,
+                                                     merge_key_bindings)
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-from prompt_toolkit.layout import (
-    AnyContainer,
-    ConditionalContainer,
-    HSplit,
-    Layout,
-    Window,
-)
+from prompt_toolkit.layout import (AnyContainer, ConditionalContainer, HSplit,
+                                   Layout, Window)
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.styles import BaseStyle, Style

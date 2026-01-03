@@ -1,19 +1,9 @@
 from __future__ import annotations
 
 from .base import ProgressBar, ProgressBarCounter
-from .formatters import (
-    Bar,
-    Formatter,
-    IterationsPerSecond,
-    Label,
-    Percentage,
-    Progress,
-    Rainbow,
-    SpinningWheel,
-    Text,
-    TimeElapsed,
-    TimeLeft,
-)
+from .formatters import (Bar, Formatter, IterationsPerSecond, Label,
+                         Percentage, Progress, Rainbow, SpinningWheel, Text,
+                         TimeElapsed, TimeLeft)
 
 __all__ = [
     "ProgressBar",

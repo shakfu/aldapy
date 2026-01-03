@@ -10,14 +10,8 @@ from .base import ComposeElement
 if TYPE_CHECKING:
     pass
 
-from ..ast_nodes import (
-    LispListNode,
-    LispSymbolNode,
-    LispNumberNode,
-    OctaveSetNode,
-    OctaveUpNode,
-    OctaveDownNode,
-)
+from ..ast_nodes import (LispListNode, LispNumberNode, LispSymbolNode,
+                         OctaveDownNode, OctaveSetNode, OctaveUpNode)
 
 
 @dataclass(frozen=True)

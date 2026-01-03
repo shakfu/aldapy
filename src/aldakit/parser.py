@@ -2,43 +2,20 @@
 
 from typing import NoReturn
 
-from .tokens import Token, TokenType, SourcePosition
-from .scanner import Scanner
+from .ast_nodes import (ASTNode, AtMarkerNode, BarlineNode,  # Phase 2 nodes
+                        BracketedSequenceNode, ChordNode, CramNode,
+                        DurationNode, EventSequenceNode, LispListNode,
+                        LispNumberNode, LispStringNode, LispSymbolNode,
+                        MarkerNode, NoteLengthMsNode, NoteLengthNode,
+                        NoteLengthSecondsNode, NoteNode, OctaveDownNode,
+                        OctaveSetNode, OctaveUpNode, OnRepetitionsNode,
+                        PartDeclarationNode, PartNode, RepeatNode,
+                        RepetitionRange, RestNode, RootNode,
+                        VariableDefinitionNode, VariableReferenceNode,
+                        VoiceGroupNode, VoiceNode)
 from .errors import AldaSyntaxError
-from .ast_nodes import (
-    ASTNode,
-    RootNode,
-    PartNode,
-    PartDeclarationNode,
-    EventSequenceNode,
-    NoteNode,
-    RestNode,
-    ChordNode,
-    DurationNode,
-    NoteLengthNode,
-    NoteLengthMsNode,
-    NoteLengthSecondsNode,
-    BarlineNode,
-    OctaveSetNode,
-    OctaveUpNode,
-    OctaveDownNode,
-    LispListNode,
-    LispSymbolNode,
-    LispNumberNode,
-    LispStringNode,
-    # Phase 2 nodes
-    VariableDefinitionNode,
-    VariableReferenceNode,
-    MarkerNode,
-    AtMarkerNode,
-    VoiceNode,
-    VoiceGroupNode,
-    CramNode,
-    RepeatNode,
-    OnRepetitionsNode,
-    RepetitionRange,
-    BracketedSequenceNode,
-)
+from .scanner import Scanner
+from .tokens import SourcePosition, Token, TokenType
 
 
 class Parser:

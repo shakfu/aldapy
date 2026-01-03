@@ -3,11 +3,9 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING, TextIO, cast
 
-from prompt_toolkit.utils import (
-    get_bell_environment_variable,
-    get_term_environment_variable,
-    is_conemu_ansi,
-)
+from prompt_toolkit.utils import (get_bell_environment_variable,
+                                  get_term_environment_variable,
+                                  is_conemu_ansi)
 
 from .base import DummyOutput, Output
 from .color_depth import ColorDepth

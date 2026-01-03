@@ -16,7 +16,8 @@ from .filters import FilterOrBool, is_searching, to_filter
 from .key_binding.vi_state import InputMode
 
 if TYPE_CHECKING:
-    from prompt_toolkit.layout.controls import BufferControl, SearchBufferControl
+    from prompt_toolkit.layout.controls import (BufferControl,
+                                                SearchBufferControl)
     from prompt_toolkit.layout.layout import Layout
 
 __all__ = [

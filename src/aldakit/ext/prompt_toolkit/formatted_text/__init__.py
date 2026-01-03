@@ -14,25 +14,13 @@ function takes any of these and turns all of them into such a tuple sequence.
 from __future__ import annotations
 
 from .ansi import ANSI
-from .base import (
-    AnyFormattedText,
-    FormattedText,
-    OneStyleAndTextTuple,
-    StyleAndTextTuples,
-    Template,
-    is_formatted_text,
-    merge_formatted_text,
-    to_formatted_text,
-)
+from .base import (AnyFormattedText, FormattedText, OneStyleAndTextTuple,
+                   StyleAndTextTuples, Template, is_formatted_text,
+                   merge_formatted_text, to_formatted_text)
 from .html import HTML
 from .pygments import PygmentsTokens
-from .utils import (
-    fragment_list_len,
-    fragment_list_to_text,
-    fragment_list_width,
-    split_lines,
-    to_plain_text,
-)
+from .utils import (fragment_list_len, fragment_list_to_text,
+                    fragment_list_width, split_lines, to_plain_text)
 
 __all__ = [
     # Base.

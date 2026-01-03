@@ -1,11 +1,11 @@
 """libremidi-based MIDI backend for realtime playback."""
 
-from pathlib import Path
 import threading
 import time
+from pathlib import Path
 
-from .base import MidiBackend
 from ..types import MidiSequence
+from .base import MidiBackend
 
 
 class LibremidiBackend(MidiBackend):

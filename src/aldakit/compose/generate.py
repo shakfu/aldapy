@@ -16,8 +16,8 @@ import random
 from collections import defaultdict
 from typing import TYPE_CHECKING, TypeVar
 
-from .core import Note, Rest, Seq, note, rest, seq
 from .base import ComposeElement
+from .core import Note, Rest, Seq, note, rest, seq
 
 if TYPE_CHECKING:
     pass

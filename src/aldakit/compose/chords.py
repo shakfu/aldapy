@@ -7,8 +7,7 @@ such as major, minor, diminished, augmented, and various seventh chords.
 from __future__ import annotations
 
 from .core import Chord, Note, note
-from .scales import PITCH_TO_OFFSET, OFFSET_TO_PITCH
-
+from .scales import OFFSET_TO_PITCH, PITCH_TO_OFFSET
 
 # =============================================================================
 # Chord Interval Definitions

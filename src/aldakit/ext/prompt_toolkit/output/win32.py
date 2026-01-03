@@ -5,7 +5,8 @@ import sys
 assert sys.platform == "win32"
 
 import os
-from ctypes import ArgumentError, byref, c_char, c_long, c_uint, c_ulong, pointer
+from ctypes import (ArgumentError, byref, c_char, c_long, c_uint, c_ulong,
+                    pointer)
 from ctypes.wintypes import DWORD, HANDLE
 from typing import Callable, TextIO, TypeVar
 
@@ -13,13 +14,9 @@ from prompt_toolkit.cursor_shapes import CursorShape
 from prompt_toolkit.data_structures import Size
 from prompt_toolkit.styles import ANSI_COLOR_NAMES, Attrs
 from prompt_toolkit.utils import get_cwidth
-from prompt_toolkit.win32_types import (
-    CONSOLE_SCREEN_BUFFER_INFO,
-    COORD,
-    SMALL_RECT,
-    STD_INPUT_HANDLE,
-    STD_OUTPUT_HANDLE,
-)
+from prompt_toolkit.win32_types import (CONSOLE_SCREEN_BUFFER_INFO, COORD,
+                                        SMALL_RECT, STD_INPUT_HANDLE,
+                                        STD_OUTPUT_HANDLE)
 
 from ..utils import SPHINX_AUTODOC_RUNNING
 from .base import Output

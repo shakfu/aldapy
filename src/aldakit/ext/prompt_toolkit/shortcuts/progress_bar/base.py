@@ -17,37 +17,20 @@ import os
 import signal
 import threading
 import traceback
-from typing import (
-    Callable,
-    Generic,
-    Iterable,
-    Iterator,
-    Sequence,
-    Sized,
-    TextIO,
-    TypeVar,
-    cast,
-)
+from typing import (Callable, Generic, Iterable, Iterator, Sequence, Sized,
+                    TextIO, TypeVar, cast)
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.filters import Condition, is_done, renderer_height_is_known
-from prompt_toolkit.formatted_text import (
-    AnyFormattedText,
-    StyleAndTextTuples,
-    to_formatted_text,
-)
+from prompt_toolkit.formatted_text import (AnyFormattedText,
+                                           StyleAndTextTuples,
+                                           to_formatted_text)
 from prompt_toolkit.input import Input
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-from prompt_toolkit.layout import (
-    ConditionalContainer,
-    FormattedTextControl,
-    HSplit,
-    Layout,
-    VSplit,
-    Window,
-)
+from prompt_toolkit.layout import (ConditionalContainer, FormattedTextControl,
+                                   HSplit, Layout, VSplit, Window)
 from prompt_toolkit.layout.controls import UIContent, UIControl
 from prompt_toolkit.layout.dimension import AnyDimension, D
 from prompt_toolkit.output import ColorDepth, Output

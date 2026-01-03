@@ -11,13 +11,8 @@ from typing import Hashable, TypeVar
 
 from prompt_toolkit.cache import SimpleCache
 
-from .base import (
-    ANSI_COLOR_NAMES,
-    ANSI_COLOR_NAMES_ALIASES,
-    DEFAULT_ATTRS,
-    Attrs,
-    BaseStyle,
-)
+from .base import (ANSI_COLOR_NAMES, ANSI_COLOR_NAMES_ALIASES, DEFAULT_ATTRS,
+                   Attrs, BaseStyle)
 from .named_colors import NAMED_COLORS
 
 __all__ = [

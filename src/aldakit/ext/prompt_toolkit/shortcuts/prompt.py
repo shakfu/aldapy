@@ -31,105 +31,74 @@ from asyncio import get_running_loop
 from contextlib import contextmanager
 from enum import Enum
 from functools import partial
-from typing import TYPE_CHECKING, Callable, Generic, Iterator, TypeVar, Union, cast
+from typing import (TYPE_CHECKING, Callable, Generic, Iterator, TypeVar, Union,
+                    cast)
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.auto_suggest import AutoSuggest, DynamicAutoSuggest
 from prompt_toolkit.buffer import Buffer
-from prompt_toolkit.clipboard import Clipboard, DynamicClipboard, InMemoryClipboard
-from prompt_toolkit.completion import Completer, DynamicCompleter, ThreadedCompleter
-from prompt_toolkit.cursor_shapes import (
-    AnyCursorShapeConfig,
-    CursorShapeConfig,
-    DynamicCursorShapeConfig,
-)
+from prompt_toolkit.clipboard import (Clipboard, DynamicClipboard,
+                                      InMemoryClipboard)
+from prompt_toolkit.completion import (Completer, DynamicCompleter,
+                                       ThreadedCompleter)
+from prompt_toolkit.cursor_shapes import (AnyCursorShapeConfig,
+                                          CursorShapeConfig,
+                                          DynamicCursorShapeConfig)
 from prompt_toolkit.document import Document
 from prompt_toolkit.enums import DEFAULT_BUFFER, SEARCH_BUFFER, EditingMode
 from prompt_toolkit.eventloop import InputHook
-from prompt_toolkit.filters import (
-    Condition,
-    FilterOrBool,
-    has_arg,
-    has_focus,
-    is_done,
-    is_true,
-    renderer_height_is_known,
-    to_filter,
-)
-from prompt_toolkit.formatted_text import (
-    AnyFormattedText,
-    StyleAndTextTuples,
-    fragment_list_to_text,
-    merge_formatted_text,
-    to_formatted_text,
-)
+from prompt_toolkit.filters import (Condition, FilterOrBool, has_arg,
+                                    has_focus, is_done, is_true,
+                                    renderer_height_is_known, to_filter)
+from prompt_toolkit.formatted_text import (AnyFormattedText,
+                                           StyleAndTextTuples,
+                                           fragment_list_to_text,
+                                           merge_formatted_text,
+                                           to_formatted_text)
 from prompt_toolkit.history import History, InMemoryHistory
 from prompt_toolkit.input.base import Input
-from prompt_toolkit.key_binding.bindings.auto_suggest import load_auto_suggest_bindings
-from prompt_toolkit.key_binding.bindings.completion import (
-    display_completions_like_readline,
-)
-from prompt_toolkit.key_binding.bindings.open_in_editor import (
-    load_open_in_editor_bindings,
-)
-from prompt_toolkit.key_binding.key_bindings import (
-    ConditionalKeyBindings,
-    DynamicKeyBindings,
-    KeyBindings,
-    KeyBindingsBase,
-    merge_key_bindings,
-)
+from prompt_toolkit.key_binding.bindings.auto_suggest import \
+    load_auto_suggest_bindings
+from prompt_toolkit.key_binding.bindings.completion import \
+    display_completions_like_readline
+from prompt_toolkit.key_binding.bindings.open_in_editor import \
+    load_open_in_editor_bindings
+from prompt_toolkit.key_binding.key_bindings import (ConditionalKeyBindings,
+                                                     DynamicKeyBindings,
+                                                     KeyBindings,
+                                                     KeyBindingsBase,
+                                                     merge_key_bindings)
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.layout import Float, FloatContainer, HSplit, Window
 from prompt_toolkit.layout.containers import ConditionalContainer, WindowAlign
-from prompt_toolkit.layout.controls import (
-    BufferControl,
-    FormattedTextControl,
-    SearchBufferControl,
-)
+from prompt_toolkit.layout.controls import (BufferControl,
+                                            FormattedTextControl,
+                                            SearchBufferControl)
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.layout import Layout
-from prompt_toolkit.layout.menus import CompletionsMenu, MultiColumnCompletionsMenu
+from prompt_toolkit.layout.menus import (CompletionsMenu,
+                                         MultiColumnCompletionsMenu)
 from prompt_toolkit.layout.processors import (
-    AfterInput,
-    AppendAutoSuggestion,
-    ConditionalProcessor,
-    DisplayMultipleCursors,
-    DynamicProcessor,
-    HighlightIncrementalSearchProcessor,
-    HighlightSelectionProcessor,
-    PasswordProcessor,
-    Processor,
-    ReverseSearchProcessor,
-    merge_processors,
-)
+    AfterInput, AppendAutoSuggestion, ConditionalProcessor,
+    DisplayMultipleCursors, DynamicProcessor,
+    HighlightIncrementalSearchProcessor, HighlightSelectionProcessor,
+    PasswordProcessor, Processor, ReverseSearchProcessor, merge_processors)
 from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.lexers import DynamicLexer, Lexer
 from prompt_toolkit.output import ColorDepth, DummyOutput, Output
-from prompt_toolkit.styles import (
-    BaseStyle,
-    ConditionalStyleTransformation,
-    DynamicStyle,
-    DynamicStyleTransformation,
-    StyleTransformation,
-    SwapLightAndDarkStyleTransformation,
-    merge_style_transformations,
-)
-from prompt_toolkit.utils import (
-    get_cwidth,
-    is_dumb_terminal,
-    suspend_to_background_supported,
-    to_str,
-)
+from prompt_toolkit.styles import (BaseStyle, ConditionalStyleTransformation,
+                                   DynamicStyle, DynamicStyleTransformation,
+                                   StyleTransformation,
+                                   SwapLightAndDarkStyleTransformation,
+                                   merge_style_transformations)
+from prompt_toolkit.utils import (get_cwidth, is_dumb_terminal,
+                                  suspend_to_background_supported, to_str)
 from prompt_toolkit.validation import DynamicValidator, Validator
 from prompt_toolkit.widgets import Frame
-from prompt_toolkit.widgets.toolbars import (
-    SearchToolbar,
-    SystemToolbar,
-    ValidationToolbar,
-)
+from prompt_toolkit.widgets.toolbars import (SearchToolbar, SystemToolbar,
+                                             ValidationToolbar)
 
 if TYPE_CHECKING:
     from prompt_toolkit.formatted_text.base import MagicFormattedText
