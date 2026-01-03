@@ -479,6 +479,7 @@ class Note:
 2. Random walks: `random_walk()`, `drunk_walk()`
 3. Rhythmic generators: `euclidean()`, `probability_seq()`
 4. Pattern-based: `markov_chain()`, `lsystem()`, `cellular_automaton()`
+5. Circuits: `shift_register()`, `turing_machine()`
 
 ### Phase 5: Advanced Features
 

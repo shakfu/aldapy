@@ -128,6 +128,66 @@ Available compose elements:
 - **Parts**: `part("piano")`, `part("violin", alias="v1")`
 - **Attributes**: `tempo(120)`, `volume(80)`, `octave(5)`, `panning(50)`
 - **Dynamics**: `pp()`, `p()`, `mp()`, `mf()`, `f()`, `ff()`
+- **Advanced**: `cram()`, `voice()`, `voice_group()`, `var()`, `var_ref()`, `marker()`, `at_marker()`
+
+### Scales and Chords
+
+Build melodies and harmonies using music theory helpers:
+
+```python
+from aldakit import Score
+from aldakit.compose import part, tempo
+from aldakit.compose import (
+    # Scale functions
+    scale, scale_notes, scale_degree, mode,
+    relative_minor, relative_major,
+    # Chord builders
+    major, minor, dim, aug, maj7, min7, dom7,
+    arpeggiate, invert_chord, voicing,
+)
+
+# Get scale pitches
+c_major = scale("c", "major")       # ['c', 'd', 'e', 'f', 'g', 'a', 'b']
+a_blues = scale("a", "blues")       # ['a', 'c', 'd', 'd+', 'e', 'g']
+
+# Generate scale as playable notes
+melody = scale_notes("c", "pentatonic", duration=8)
+
+# Key relationships
+rel_min = relative_minor("c")  # 'a' (C major -> A minor)
+rel_maj = relative_major("a")  # 'c' (A minor -> C major)
+
+# Build chords
+c_maj = major("c")                    # C E G
+a_min7 = min7("a")                    # A C E G
+g_dom7 = dom7("g", inversion=1)       # B D F G (first inversion)
+
+# Arpeggiate a chord
+arp = arpeggiate(maj7("c"), pattern=[0, 1, 2, 3, 2, 1], duration=16)
+
+# Custom voicing (spread chord across octaves)
+spread = voicing(major("c"), [3, 4, 5])  # C3 E4 G5
+
+# Create a I-IV-V-I progression
+pitches = scale("c", "major")
+progression = [
+    major(pitches[0], duration=2),  # C major (I)
+    major(pitches[3], duration=2),  # F major (IV)
+    major(pitches[4], duration=2),  # G major (V)
+    major(pitches[0], duration=1),  # C major (I)
+]
+
+score = Score.from_elements(
+    part("piano"),
+    tempo(100),
+    *progression,
+)
+score.play()
+```
+
+Available scales: major, minor, harmonic-minor, melodic-minor, pentatonic, blues, chromatic, whole-tone, dorian, phrygian, lydian, mixolydian, locrian, japanese, arabic, hungarian-minor, spanish, bebop-dominant, bebop-major
+
+Available chords: major, minor, dim, aug, sus2, sus4, maj7, min7, dom7, dim7, half_dim7, min_maj7, aug7, maj6, min6, dom9, maj9, min9, add9, power
 
 ### Transformers
 

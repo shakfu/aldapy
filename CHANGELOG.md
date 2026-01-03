@@ -53,9 +53,57 @@ Programmatic music composition with domain objects that generate AST directly (n
   - `Note.transpose(semitones)` - pitch transposition
   - `Note.with_duration(n)` / `Note.with_octave(n)` - property changes
   - `note * n` / `seq * n` - repeat syntax
+- **Advanced elements:**
+  - `cram(*elements, duration)` - tuplet/cram expressions
+  - `voice(number, *elements)` - voice for polyphonic writing
+  - `voice_group(*voices)` - group of parallel voices
+  - `var(name, *elements)` - variable definition
+  - `var_ref(name)` - variable reference
+  - `marker(name)` - marker (synchronization point)
+  - `at_marker(name)` - jump to marker
 - **Output methods:**
   - `to_ast()` - generate AST node directly
   - `to_alda()` - generate Alda source code
+
+#### Scales Module (`aldakit.compose.scales`)
+
+Music theory utilities for scales and modes:
+
+- **Scale generation:**
+  - `scale(root, scale_type)` - get pitch names for a scale
+  - `scale_notes(root, scale_type, octave, duration, ascending)` - generate Seq of notes
+  - `scale_degree(root, scale_type, degree, octave)` - get specific scale degree
+  - `mode(root, mode_name)` - alias for scale (ionian, dorian, etc.)
+- **Key relationships:**
+  - `relative_minor(major_root)` - get relative minor (C -> A)
+  - `relative_major(minor_root)` - get relative major (A -> C)
+  - `parallel_minor(major_root)` - same root, minor mode
+  - `parallel_major(minor_root)` - same root, major mode
+- **Utilities:**
+  - `transpose_scale(pitches, semitones)` - transpose pitch list
+  - `interval_name(semitones)` - get interval name (0 -> "unison", 7 -> "perfect fifth")
+  - `list_scales()` - list available scale types
+  - `SCALE_INTERVALS` - dictionary of scale interval patterns
+- **Scale types:** major, minor, harmonic-minor, melodic-minor, pentatonic, blues, chromatic, whole-tone, diminished, dorian, phrygian, lydian, mixolydian, locrian, japanese, arabic, hungarian-minor, spanish, bebop-dominant, bebop-major
+
+#### Chords Module (`aldakit.compose.chords`)
+
+Chord voicing utilities for building common chord types:
+
+- **Core builder:**
+  - `build_chord(root, chord_type, octave, duration, inversion)` - build any chord type
+- **Triad constructors:**
+  - `major(root)`, `minor(root)`, `dim(root)`, `aug(root)`, `sus2(root)`, `sus4(root)`
+- **Seventh chord constructors:**
+  - `maj7(root)`, `min7(root)`, `dom7(root)`, `dim7(root)`, `half_dim7(root)`, `min_maj7(root)`, `aug7(root)`
+- **Extended chord constructors:**
+  - `maj6(root)`, `min6(root)`, `dom9(root)`, `maj9(root)`, `min9(root)`, `add9(root)`, `power(root)`
+- **Chord utilities:**
+  - `arpeggiate(chord, pattern, duration)` - convert chord to arpeggio note sequence
+  - `invert_chord(chord, inversion)` - apply inversion to existing chord
+  - `voicing(chord, octaves)` - apply custom octave voicing (spread, close, etc.)
+  - `list_chord_types()` - list available chord types
+  - `CHORD_INTERVALS` - dictionary of chord interval patterns
 
 #### Transform Module (`aldakit.compose.transform`)
 

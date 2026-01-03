@@ -20,6 +20,13 @@ from ..ast_nodes import (
     NoteLengthMsNode,
     NoteLengthSecondsNode,
     RepeatNode,
+    CramNode,
+    VoiceNode,
+    VoiceGroupNode,
+    VariableDefinitionNode,
+    VariableReferenceNode,
+    MarkerNode,
+    AtMarkerNode,
 )
 
 # Pitch to semitone offset from C
@@ -506,3 +513,318 @@ def seq(*elements: ComposeElement) -> Seq:
         Seq element.
     """
     return Seq(elements=list(elements))
+
+
+# =============================================================================
+# Cram (Tuplets)
+# =============================================================================
+
+
+@dataclass(frozen=True)
+class Cram(ComposeElement):
+    """A cram expression (tuplet) - fit multiple notes into a duration.
+
+    Cram expressions fit a group of notes into a specific duration,
+    creating tuplets like triplets, quintuplets, etc.
+
+    Examples:
+        >>> cram(note("c"), note("d"), note("e"), duration=4)  # Triplet in quarter note
+        >>> cram(note("c"), note("d"), note("e"), note("f"), note("g"), duration=2)  # Quintuplet
+    """
+
+    elements: list[ComposeElement]
+    duration: int | None = None
+    dots: int = 0
+
+    def to_ast(self) -> CramNode:
+        """Convert to AST CramNode."""
+        # Build event sequence from elements
+        events = []
+        for elem in self.elements:
+            events.append(elem.to_ast())
+
+        event_seq = EventSequenceNode(events=events, position=None)
+
+        # Build duration node
+        duration_node = None
+        if self.duration is not None:
+            duration_node = DurationNode(
+                components=[
+                    NoteLengthNode(
+                        denominator=self.duration, dots=self.dots, position=None
+                    )
+                ],
+                position=None,
+            )
+
+        return CramNode(events=event_seq, duration=duration_node, position=None)
+
+    def to_alda(self) -> str:
+        """Convert to Alda source code."""
+        inner = " ".join(elem.to_alda() for elem in self.elements)
+        if self.duration is not None:
+            dots = "." * self.dots
+            return f"{{{inner}}}{self.duration}{dots}"
+        return f"{{{inner}}}"
+
+
+def cram(*elements: ComposeElement, duration: int | None = None, dots: int = 0) -> Cram:
+    """Create a cram expression (tuplet).
+
+    Args:
+        *elements: Notes/rests to fit into the duration.
+        duration: Duration denominator to fit notes into.
+        dots: Number of dots on the duration.
+
+    Returns:
+        Cram element.
+
+    Examples:
+        >>> cram(note("c"), note("d"), note("e"), duration=4)  # Triplet
+        >>> cram(note("c"), note("d"), note("e"), note("f"), note("g"), duration=2)
+    """
+    return Cram(elements=list(elements), duration=duration, dots=dots)
+
+
+# =============================================================================
+# Voice (Parallel Lines)
+# =============================================================================
+
+
+@dataclass(frozen=True)
+class Voice(ComposeElement):
+    """A voice within a part for polyphonic writing.
+
+    Voices allow multiple parallel lines within a single part.
+    Voice numbers start at 1; V0 ends the voice section.
+
+    Examples:
+        >>> voice(1, note("c"), note("d"), note("e"))  # Voice 1
+        >>> voice(2, note("e"), note("f"), note("g"))  # Voice 2
+    """
+
+    number: int
+    elements: list[ComposeElement]
+
+    def __post_init__(self) -> None:
+        if self.number < 0:
+            raise ValueError("Voice number must be non-negative (0 ends voices)")
+
+    def to_ast(self) -> VoiceNode:
+        """Convert to AST VoiceNode."""
+        events = [elem.to_ast() for elem in self.elements]
+        event_seq = EventSequenceNode(events=events, position=None)
+        return VoiceNode(number=self.number, events=event_seq, position=None)
+
+    def to_alda(self) -> str:
+        """Convert to Alda source code."""
+        inner = " ".join(elem.to_alda() for elem in self.elements)
+        return f"V{self.number}: {inner}"
+
+
+@dataclass(frozen=True)
+class VoiceGroup(ComposeElement):
+    """A group of parallel voices.
+
+    Examples:
+        >>> voice_group(
+        ...     voice(1, note("c"), note("d")),
+        ...     voice(2, note("e"), note("f")),
+        ... )
+    """
+
+    voices: list[Voice]
+
+    def to_ast(self) -> VoiceGroupNode:
+        """Convert to AST VoiceGroupNode."""
+        voice_nodes = [v.to_ast() for v in self.voices]
+        return VoiceGroupNode(voices=voice_nodes, position=None)
+
+    def to_alda(self) -> str:
+        """Convert to Alda source code."""
+        lines = [v.to_alda() for v in self.voices]
+        lines.append("V0:")  # End voices
+        return "\n".join(lines)
+
+
+def voice(number: int, *elements: ComposeElement) -> Voice:
+    """Create a voice.
+
+    Args:
+        number: Voice number (1, 2, etc.; 0 ends voice section).
+        *elements: Notes/rests in this voice.
+
+    Returns:
+        Voice element.
+    """
+    return Voice(number=number, elements=list(elements))
+
+
+def voice_group(*voices: Voice) -> VoiceGroup:
+    """Create a voice group from multiple voices.
+
+    Args:
+        *voices: Voice elements to group.
+
+    Returns:
+        VoiceGroup element.
+    """
+    return VoiceGroup(voices=list(voices))
+
+
+# =============================================================================
+# Variables
+# =============================================================================
+
+
+@dataclass(frozen=True)
+class Variable(ComposeElement):
+    """A variable definition.
+
+    Variables allow naming a sequence for reuse.
+
+    Examples:
+        >>> var("riff", note("c"), note("d"), note("e"))
+        >>> var_ref("riff")  # Use the variable
+    """
+
+    name: str
+    elements: list[ComposeElement]
+
+    def to_ast(self) -> VariableDefinitionNode:
+        """Convert to AST VariableDefinitionNode."""
+        events = [elem.to_ast() for elem in self.elements]
+        event_seq = EventSequenceNode(events=events, position=None)
+        return VariableDefinitionNode(name=self.name, events=event_seq, position=None)
+
+    def to_alda(self) -> str:
+        """Convert to Alda source code."""
+        inner = " ".join(elem.to_alda() for elem in self.elements)
+        return f"{self.name} = {inner}"
+
+
+@dataclass(frozen=True)
+class VariableRef(ComposeElement):
+    """A reference to a previously defined variable.
+
+    Examples:
+        >>> var_ref("riff")  # Use a variable named 'riff'
+    """
+
+    name: str
+
+    def to_ast(self) -> VariableReferenceNode:
+        """Convert to AST VariableReferenceNode."""
+        return VariableReferenceNode(name=self.name, position=None)
+
+    def to_alda(self) -> str:
+        """Convert to Alda source code."""
+        return self.name
+
+
+def var(name: str, *elements: ComposeElement) -> Variable:
+    """Define a variable.
+
+    Args:
+        name: Variable name.
+        *elements: Notes/rests to assign to the variable.
+
+    Returns:
+        Variable definition element.
+
+    Examples:
+        >>> var("riff", note("c"), note("d"), note("e"), note("f"))
+    """
+    return Variable(name=name, elements=list(elements))
+
+
+def var_ref(name: str) -> VariableRef:
+    """Reference a variable.
+
+    Args:
+        name: Variable name to reference.
+
+    Returns:
+        Variable reference element.
+
+    Examples:
+        >>> var_ref("riff")
+    """
+    return VariableRef(name=name)
+
+
+# =============================================================================
+# Markers
+# =============================================================================
+
+
+@dataclass(frozen=True)
+class Marker(ComposeElement):
+    """A marker definition for synchronization points.
+
+    Markers allow different parts to synchronize at named points.
+
+    Examples:
+        >>> marker("chorus")  # Define marker
+        >>> at_marker("chorus")  # Jump to marker in another part
+    """
+
+    name: str
+
+    def to_ast(self) -> MarkerNode:
+        """Convert to AST MarkerNode."""
+        return MarkerNode(name=self.name, position=None)
+
+    def to_alda(self) -> str:
+        """Convert to Alda source code."""
+        return f"%{self.name}"
+
+
+@dataclass(frozen=True)
+class AtMarker(ComposeElement):
+    """A marker reference (jump to marker).
+
+    Examples:
+        >>> at_marker("chorus")  # Jump to the 'chorus' marker
+    """
+
+    name: str
+
+    def to_ast(self) -> AtMarkerNode:
+        """Convert to AST AtMarkerNode."""
+        return AtMarkerNode(name=self.name, position=None)
+
+    def to_alda(self) -> str:
+        """Convert to Alda source code."""
+        return f"@{self.name}"
+
+
+def marker(name: str) -> Marker:
+    """Create a marker.
+
+    Args:
+        name: Marker name.
+
+    Returns:
+        Marker element.
+
+    Examples:
+        >>> marker("verse")
+        >>> marker("chorus")
+    """
+    return Marker(name=name)
+
+
+def at_marker(name: str) -> AtMarker:
+    """Create a marker reference (jump to marker).
+
+    Args:
+        name: Marker name to jump to.
+
+    Returns:
+        AtMarker element.
+
+    Examples:
+        >>> at_marker("chorus")  # Jump to chorus marker
+    """
+    return AtMarker(name=name)
