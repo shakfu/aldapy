@@ -75,6 +75,30 @@ from .transform import (
     pipe,
     identity,
 )
+from .generate import (
+    # Random selection
+    random_note,
+    random_choice,
+    weighted_choice,
+    # Random walks
+    random_walk,
+    drunk_walk,
+    # Rhythmic generators
+    euclidean,
+    probability_seq,
+    rest_probability,
+    # Markov chains
+    MarkovChain,
+    markov_chain,
+    learn_markov,
+    # L-Systems
+    lsystem,
+    # Cellular automata
+    cellular_automaton,
+    # Shift registers
+    shift_register,
+    turing_machine,
+)
 
 __all__ = [
     # Base
@@ -137,4 +161,26 @@ __all__ = [
     # Helpers
     "pipe",
     "identity",
+    # Random selection
+    "random_note",
+    "random_choice",
+    "weighted_choice",
+    # Random walks
+    "random_walk",
+    "drunk_walk",
+    # Rhythmic generators
+    "euclidean",
+    "probability_seq",
+    "rest_probability",
+    # Markov chains
+    "MarkovChain",
+    "markov_chain",
+    "learn_markov",
+    # L-Systems
+    "lsystem",
+    # Cellular automata
+    "cellular_automaton",
+    # Shift registers
+    "shift_register",
+    "turing_machine",
 ]

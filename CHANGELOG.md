@@ -105,6 +105,33 @@ MIDI-level transformers for post-MIDI-generation processing (operates on absolut
   - `merge(*seqs)` - combine multiple sequences into one
   - `concatenate(*seqs, gap)` - append sequences end-to-end
 
+#### Generate Module (`aldakit.compose.generate`)
+
+Generative functions for algorithmic music composition:
+
+- **Random selection:**
+  - `random_note(scale, duration, octave, seed)` - random note from a scale
+  - `random_choice(options, seed)` - random selection from options
+  - `weighted_choice(weighted_options, seed)` - probability-weighted selection
+- **Random walks:**
+  - `random_walk(start, steps, intervals, duration, ...)` - pitch random walk
+  - `drunk_walk(start, steps, max_step, bias, ...)` - biased toward smaller intervals
+- **Rhythmic generators:**
+  - `euclidean(hits, steps, pitch, rotate)` - Euclidean rhythm patterns (tresillo, cinquillo, etc.)
+  - `probability_seq(notes, length, probability)` - probabilistic note/rest sequence
+  - `rest_probability(seq, probability)` - add random rests to existing sequence
+- **Markov chains:**
+  - `markov_chain(transitions)` - create chain from transition probabilities
+  - `learn_markov(sequence, order)` - learn transitions from existing melody
+  - `MarkovChain.generate(start, length)` - generate new melodies
+- **L-Systems:**
+  - `lsystem(axiom, rules, iterations, note_map)` - Lindenmayer system patterns
+- **Cellular automata:**
+  - `cellular_automaton(rule, width, steps, pitch_on)` - Wolfram elementary automata (rules 0-255)
+- **Shift registers:**
+  - `shift_register(length, taps, bits, scale, mode)` - Linear Feedback Shift Register patterns
+  - `turing_machine(length, bits, scale, probability)` - Music Thing Modular-style evolving loops
+
 ## [0.1.3]
 
 ### Changed

@@ -201,6 +201,60 @@ merged = merge(midi_seq, another_seq)                       # Combine sequences
 
 Note: MIDI transformers operate on absolute timing (seconds) and cannot be converted back to Alda notation.
 
+### Generative Functions
+
+Create algorithmic compositions with generative functions:
+
+```python
+from aldakit import Score
+from aldakit.compose import part, tempo
+from aldakit.compose.generate import (
+    random_walk, euclidean, markov_chain, lsystem, cellular_automaton,
+    shift_register, turing_machine,
+)
+
+# Random walk melody
+melody = random_walk("c", steps=16, intervals=[-2, -1, 1, 2], duration=8, seed=42)
+
+# Euclidean rhythms (e.g., Cuban tresillo: 3 hits over 8 steps)
+rhythm = euclidean(hits=3, steps=8, pitch="c", duration=16)
+
+# Markov chain
+chain = markov_chain({
+    "c": {"d": 0.5, "e": 0.3, "g": 0.2},
+    "d": {"e": 0.6, "c": 0.4},
+    "e": {"c": 0.5, "g": 0.5},
+    "g": {"c": 1.0},
+})
+markov_melody = chain.generate(start="c", length=16, duration=8, seed=42)
+
+# L-System (Fibonacci pattern)
+from aldakit.compose import note, rest
+fib = lsystem(
+    axiom="A",
+    rules={"A": "AB", "B": "A"},
+    iterations=5,
+    note_map={"A": note("c", duration=8), "B": note("e", duration=8)},
+)
+
+# Cellular automaton (Rule 110)
+automaton = cellular_automaton(rule=110, width=8, steps=4, pitch_on="c", duration=16)
+
+# Shift register (LFSR) - classic analog sequencer
+lfsr = shift_register(16, bits=4, scale=["c", "e", "g", "b"], duration=16)
+
+# Turing Machine - evolving loop (probability=0 for locked, higher for chaos)
+turing = turing_machine(32, bits=8, probability=0.1, seed=42)
+
+# Combine into a score
+score = Score.from_elements(
+    part("piano"),
+    tempo(120),
+    *melody.elements,
+)
+score.play()
+```
+
 ## CLI Reference
 
 ```sh
