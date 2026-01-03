@@ -100,6 +100,8 @@ before-all = "yum install -y alsa-lib-devel || apt-get update && apt-get install
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
+# libremidi requires macOS 11.0+
+environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
