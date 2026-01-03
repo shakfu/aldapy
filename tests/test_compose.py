@@ -405,7 +405,7 @@ class TestScoreFromElements:
         score = Score.from_elements(
             part("piano"), tempo(120), note("c", duration=4), note("d"), note("e")
         )
-        assert score._mode == Score._MODE_ELEMENTS
+        assert score._mode == "elements"
         assert len(score._elements) == 5
 
     def test_from_elements_ast(self):

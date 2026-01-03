@@ -17,6 +17,100 @@ if TYPE_CHECKING:
     from .compose.base import ComposeElement
 
 
+# Mode constants for internal state
+_MODE_SOURCE = "source"
+_MODE_ELEMENTS = "elements"
+_MODE_MIDI = "midi"
+
+
+def _ast_to_alda(ast: RootNode) -> str:
+    """Convert an AST back to Alda source code."""
+    from .ast_nodes import (
+        PartDeclarationNode,
+        NoteNode,
+        RestNode,
+        ChordNode,
+        DurationNode,
+        NoteLengthNode,
+        LispListNode,
+        LispSymbolNode,
+        LispNumberNode,
+        OctaveSetNode,
+        OctaveUpNode,
+        OctaveDownNode,
+    )
+
+    def duration_to_str(d: DurationNode | None) -> str:
+        if d is None:
+            return ""
+        # DurationNode has components, typically NoteLengthNode
+        if not d.components:
+            return ""
+        comp = d.components[0]
+        if isinstance(comp, NoteLengthNode):
+            result = str(int(comp.denominator))
+            result += "." * comp.dots
+            return result
+        return ""
+
+    def node_to_str(node) -> str:
+        if isinstance(node, PartDeclarationNode):
+            instruments = "/".join(node.names)
+            return f"\n{instruments}:\n"
+
+        elif isinstance(node, NoteNode):
+            result = node.letter
+            result += "".join(node.accidentals)
+            result += duration_to_str(node.duration)
+            return result
+
+        elif isinstance(node, RestNode):
+            result = "r"
+            result += duration_to_str(node.duration)
+            return result
+
+        elif isinstance(node, ChordNode):
+            notes = "/".join(node_to_str(n) for n in node.notes)
+            notes += duration_to_str(node.duration)
+            return notes
+
+        elif isinstance(node, LispListNode):
+            parts = []
+            for elem in node.elements:
+                if isinstance(elem, LispSymbolNode):
+                    parts.append(elem.name)
+                elif isinstance(elem, LispNumberNode):
+                    parts.append(str(elem.value))
+                else:
+                    parts.append(node_to_str(elem))
+            return "(" + " ".join(parts) + ")"
+
+        elif isinstance(node, OctaveSetNode):
+            return f"o{node.octave}"
+
+        elif isinstance(node, OctaveUpNode):
+            return ">"
+
+        elif isinstance(node, OctaveDownNode):
+            return "<"
+
+        elif hasattr(node, "events"):
+            # EventSequenceNode
+            return " ".join(node_to_str(e) for e in node.events)
+
+        elif hasattr(node, "children"):
+            # RootNode or similar container
+            return " ".join(node_to_str(c) for c in node.children)
+
+        else:
+            return ""
+
+    result = node_to_str(ast)
+    # Clean up extra whitespace
+    lines = [line.strip() for line in result.split("\n")]
+    return "\n".join(line for line in lines if line)
+
+
 class Score:
     """A unified score class for parsing, building, and playing music.
 
@@ -53,10 +147,6 @@ class Score:
         >>> score.play()
     """
 
-    # Mode constants
-    _MODE_SOURCE = "source"
-    _MODE_ELEMENTS = "elements"
-
     def __init__(self, source: str, filename: str = "<input>") -> None:
         """Create a Score from Alda source code.
 
@@ -64,10 +154,11 @@ class Score:
             source: Alda source code string.
             filename: Optional filename for error messages.
         """
-        self._mode = self._MODE_SOURCE
+        self._mode = _MODE_SOURCE
         self._source = source
         self._filename = filename
         self._elements: list[ComposeElement] = []
+        self._imported_ast: RootNode | None = None
 
     @classmethod
     def from_source(cls, source: str, filename: str = "<input>") -> Score:
@@ -86,20 +177,73 @@ class Score:
 
     @classmethod
     def from_file(cls, path: str | Path) -> Score:
-        """Create a Score from an Alda file.
+        """Create a Score from an Alda or MIDI file.
 
         Args:
-            path: Path to the Alda file.
+            path: Path to the Alda (.alda) or MIDI (.mid, .midi) file.
 
         Returns:
             A new Score instance.
 
         Raises:
             FileNotFoundError: If the file does not exist.
+            ValueError: If the file type is not supported.
         """
         path = Path(path)
-        source = path.read_text(encoding="utf-8")
-        return cls(source, filename=str(path))
+
+        if path.suffix.lower() in (".mid", ".midi"):
+            return cls.from_midi_file(path)
+        elif path.suffix.lower() == ".alda":
+            source = path.read_text(encoding="utf-8")
+            return cls(source, filename=str(path))
+        else:
+            # Try to read as Alda source
+            source = path.read_text(encoding="utf-8")
+            return cls(source, filename=str(path))
+
+    @classmethod
+    def from_midi_file(
+        cls,
+        path: str | Path,
+        *,
+        quantize_grid: float = 0.25,
+    ) -> Score:
+        """Create a Score by importing a MIDI file.
+
+        This converts the MIDI file to an AST representation, allowing
+        it to be played, exported to Alda, or further manipulated.
+
+        Args:
+            path: Path to the MIDI file.
+            quantize_grid: Grid size in beats for quantization (0.25 = 16th notes).
+                Set to 0 to disable quantization.
+
+        Returns:
+            A new Score instance.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+            MidiParseError: If the MIDI file cannot be parsed.
+
+        Examples:
+            >>> score = Score.from_midi_file("recording.mid")
+            >>> print(score.to_alda())
+            >>> score.play()
+        """
+        from .midi.smf_reader import read_midi_file
+        from .midi.midi_to_ast import midi_to_ast
+
+        path = Path(path)
+        midi_sequence = read_midi_file(path)
+        ast = midi_to_ast(midi_sequence, quantize_grid=quantize_grid)
+
+        score = cls.__new__(cls)
+        score._mode = _MODE_MIDI
+        score._source = ""
+        score._filename = str(path)
+        score._elements = []
+        score._imported_ast = ast
+        return score
 
     @classmethod
     def from_elements(cls, *elements: ComposeElement) -> Score:
@@ -122,10 +266,11 @@ class Score:
             ... )
         """
         score = cls.__new__(cls)
-        score._mode = cls._MODE_ELEMENTS
+        score._mode = _MODE_ELEMENTS
         score._source = ""
         score._filename = "<compose>"
         score._elements = list(elements)
+        score._imported_ast = None
         return score
 
     @classmethod
@@ -150,8 +295,12 @@ class Score:
     @cached_property
     def ast(self) -> RootNode:
         """The parsed AST (lazily computed and cached)."""
-        if self._mode == self._MODE_SOURCE:
+        if self._mode == _MODE_SOURCE:
             return parse(self._source, self._filename)
+        elif self._mode == _MODE_MIDI:
+            # AST was imported from MIDI file
+            assert self._imported_ast is not None
+            return self._imported_ast
         else:
             return self._build_ast_from_elements()
 
@@ -219,9 +368,9 @@ class Score:
         Raises:
             ValueError: If the score was created from source code.
         """
-        if self._mode == self._MODE_SOURCE:
+        if self._mode != _MODE_ELEMENTS:
             raise ValueError(
-                "Cannot add elements to a source-based score. "
+                "Cannot add elements to this score. "
                 "Use Score.from_elements() to create a modifiable score."
             )
         self._elements.extend(elements)
@@ -277,8 +426,11 @@ class Score:
         Returns:
             Alda source code string.
         """
-        if self._mode == self._MODE_SOURCE:
+        if self._mode == _MODE_SOURCE:
             return self._source
+        elif self._mode == _MODE_MIDI:
+            # Generate Alda from AST
+            return _ast_to_alda(self.ast)
         else:
             return " ".join(e.to_alda() for e in self._elements)
 
@@ -316,13 +468,15 @@ class Score:
             backend.save(self.midi, path)
 
     def __repr__(self) -> str:
-        if self._mode == self._MODE_SOURCE:
+        if self._mode == _MODE_SOURCE:
             # Show first 50 chars of source, truncated if longer
             preview = self._source[:50]
             if len(self._source) > 50:
                 preview += "..."
             preview = preview.replace("\n", "\\n")
             return f"Score({preview!r})"
+        elif self._mode == _MODE_MIDI:
+            return f"Score.from_midi_file({self._filename!r})"
         else:
             n = len(self._elements)
             return f"Score.from_elements(<{n} elements>)"

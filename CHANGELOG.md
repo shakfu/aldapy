@@ -180,6 +180,33 @@ Generative functions for algorithmic music composition:
   - `shift_register(length, taps, bits, scale, mode)` - Linear Feedback Shift Register patterns
   - `turing_machine(length, bits, scale, probability)` - Music Thing Modular-style evolving loops
 
+#### MIDI Import (`aldakit.midi.smf_reader`, `aldakit.midi.midi_to_ast`)
+
+Import MIDI files and convert them to Alda for editing, manipulation, and playback:
+
+- **Score methods:**
+  - `Score.from_midi_file(path, quantize_grid)` - import a MIDI file as a Score
+  - `Score.from_file(path)` - now auto-detects .mid/.midi files and imports them
+  - `score.to_alda()` - export imported MIDI as Alda source code
+  - `score.save(path)` - re-save imported MIDI or convert to Alda
+- **MIDI file reader:**
+  - Full Standard MIDI File (SMF) format 0 and 1 support
+  - Tempo map parsing with proper timing conversion
+  - Note on/off pairing with duration calculation
+  - Program change detection for instrument assignment
+  - Variable-length quantity parsing
+- **MIDI to AST conversion:**
+  - MIDI pitch to note name mapping (with sharps for black keys)
+  - Timing quantization to standard note values (whole, half, quarter, etc.)
+  - Configurable quantization grid (default: 16th notes)
+  - Chord detection for simultaneous notes
+  - Rest insertion for gaps between notes
+  - Multi-channel support (each channel becomes a separate part)
+  - General MIDI program to instrument name mapping
+- **Round-trip workflow:**
+  - Import MIDI -> Edit as Alda -> Export back to MIDI
+  - Import MIDI -> Apply transformations -> Play or save
+
 ## [0.1.3]
 
 ### Changed

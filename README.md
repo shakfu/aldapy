@@ -81,6 +81,45 @@ print(score.ast)   # Parsed AST
 print(score.midi)  # MIDI sequence
 ```
 
+### MIDI Import
+
+Import existing MIDI files and work with them as Alda:
+
+```python
+from aldakit import Score
+
+# Import a MIDI file
+score = Score.from_midi_file("recording.mid")
+
+# Or use from_file (auto-detects .mid/.midi)
+score = Score.from_file("song.mid")
+
+# View as Alda source
+print(score.to_alda())
+# piano:
+# o4 c4 d e f | g a b > c
+
+# Play the imported MIDI
+score.play()
+
+# Export to Alda file
+score.save("song.alda")
+
+# Re-export to MIDI
+score.save("output.mid")
+
+# Import with custom quantization grid
+# Default is 0.25 (16th notes), use 0.5 for 8th notes
+score = Score.from_midi_file("recording.mid", quantize_grid=0.5)
+```
+
+Features:
+- Multi-track MIDI files (each channel becomes a separate part)
+- Tempo detection and preservation
+- General MIDI instrument mapping
+- Chord detection for simultaneous notes
+- Configurable timing quantization
+
 ### Programmatic Composition
 
 Build music programmatically using the compose module:
