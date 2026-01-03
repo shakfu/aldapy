@@ -1,12 +1,26 @@
 # aldakit
 
-[![PyPI version](https://badge.fury.io/py/aldakit.svg)](https://pypi.org/project/aldakit/)
+[![PyPI version](https://img.shields.io/pypi/v/aldakit)](https://pypi.org/project/aldakit/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A zero-dependency Python parser and MIDI generator for the [Alda](https://alda.io) music programming language[^1].
 
 [^1]: Includes a rich repl and native MIDI support via bundled [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit) and [libremidi](https://github.com/jcelerier/libremidi) respectively.
+
+## Features
+
+- **Alda Parser** - Full parser for the Alda music language with AST generation
+- **MIDI Playback** - Low-latency playback via libremidi (CoreMIDI, ALSA, WinMM)
+- **MIDI Export** - Save compositions as Standard MIDI Files
+- **MIDI Import** - Load MIDI files and convert to Alda notation
+- **Real-time Transcription** - Record from MIDI keyboards and convert to Alda
+- **Programmatic Composition** - Build music with Python using the compose module
+- **Music Theory** - Scale, chord, and interval utilities
+- **Transformers** - Transpose, invert, augment, diminish, and more
+- **Generative Music** - Markov chains, L-systems, cellular automata, Euclidean rhythms
+- **Interactive REPL** - Syntax highlighting, auto-completion, and live playback
+- **CLI Tools** - Play, transcribe, and convert from the command line
 
 ## Installation
 
