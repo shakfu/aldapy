@@ -120,6 +120,59 @@ Features:
 - Chord detection for simultaneous notes
 - Configurable timing quantization
 
+### Real-Time MIDI Transcription
+
+Record MIDI input from a keyboard or controller:
+
+```python
+import aldakit
+
+# List available MIDI input ports
+print(aldakit.list_input_ports())
+
+# Record for 10 seconds from the first available port
+score = aldakit.transcribe(duration=10)
+
+# Play back what was recorded
+score.play()
+
+# Export to Alda source
+print(score.to_alda())
+
+# Record with options
+score = aldakit.transcribe(
+    duration=30,
+    port_name="My MIDI Keyboard",
+    instrument="piano",
+    tempo=120,
+    quantize_grid=0.25,  # Quantize to 16th notes
+)
+```
+
+For more control, use `TranscribeSession`:
+
+```python
+from aldakit.midi.transcriber import TranscribeSession
+
+session = TranscribeSession(quantize_grid=0.25, default_tempo=120)
+
+# Set a callback for note events (optional)
+session.on_note(lambda pitch, vel, on: print(f"Note: {pitch}, vel={vel}, on={on}"))
+
+# Start recording
+session.start()
+
+# Poll periodically (in a loop or timer)
+import time
+for _ in range(100):
+    session.poll()
+    time.sleep(0.1)
+
+# Stop and get the recorded notes
+seq = session.stop()
+print(seq.to_alda())
+```
+
 ### Programmatic Composition
 
 Build music programmatically using the compose module:

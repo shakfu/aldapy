@@ -5,6 +5,7 @@ from .scanner import Scanner
 from .parser import Parser, parse
 from .score import Score
 from .api import play, play_file, save, save_file, list_ports
+from .midi.transcriber import transcribe, list_input_ports
 from .ast_nodes import (
     ASTNode,
     ASTVisitor,
@@ -62,6 +63,8 @@ __all__ = [
     "save",
     "save_file",
     "list_ports",
+    "transcribe",
+    "list_input_ports",
     # Convenience function
     "parse",
     # Core classes

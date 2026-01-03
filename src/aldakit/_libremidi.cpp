@@ -1,11 +1,86 @@
 #include <libremidi/libremidi.hpp>
 
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/function.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/string_view.h>
 #include <nanobind/stl/vector.h>
 
+#include <deque>
+#include <mutex>
+
 namespace nb = nanobind;
+
+// Thread-safe message queue for MIDI input
+struct MidiMessage {
+  std::vector<unsigned char> bytes;
+  int64_t timestamp;
+};
+
+// Wrapper for MidiIn that handles callbacks safely with Python GIL
+struct MidiInWrapper {
+  std::deque<MidiMessage> message_queue;
+  std::mutex queue_mutex;
+  libremidi::midi_in impl;
+  std::function<void(const std::vector<unsigned char>&, int64_t)> python_callback;
+
+  MidiInWrapper() : impl{create_config(), libremidi::midi1::default_api()} {}
+
+  libremidi::input_configuration create_config() {
+    libremidi::input_configuration conf;
+    conf.on_message = [this](libremidi::message&& msg) {
+      std::lock_guard<std::mutex> lock(queue_mutex);
+      message_queue.push_back(MidiMessage{
+        std::vector<unsigned char>(msg.begin(), msg.end()),
+        msg.timestamp
+      });
+    };
+    conf.ignore_sysex = true;
+    conf.ignore_timing = true;
+    conf.ignore_sensing = true;
+    return conf;
+  }
+
+  stdx::error open_port(const libremidi::input_port& p) {
+    return impl.open_port(p);
+  }
+
+  stdx::error open_virtual_port(std::string_view name) {
+    return impl.open_virtual_port(name);
+  }
+
+  void close_port() {
+    impl.close_port();
+  }
+
+  bool is_port_open() const {
+    return impl.is_port_open();
+  }
+
+  // Poll for messages and invoke callback if set, return list of messages
+  std::vector<MidiMessage> poll() {
+    std::vector<MidiMessage> messages;
+    {
+      std::lock_guard<std::mutex> lock(queue_mutex);
+      while (!message_queue.empty()) {
+        messages.push_back(std::move(message_queue.front()));
+        message_queue.pop_front();
+      }
+    }
+    return messages;
+  }
+
+  // Check if there are pending messages
+  bool has_messages() {
+    std::lock_guard<std::mutex> lock(queue_mutex);
+    return !message_queue.empty();
+  }
+
+  // Get current timestamp
+  int64_t absolute_timestamp() {
+    return impl.absolute_timestamp();
+  }
+};
 
 NB_MODULE(_libremidi, m) {
   // Expose available_apis for debugging
@@ -20,11 +95,27 @@ NB_MODULE(_libremidi, m) {
   m.def("get_version", []() {
     return std::string(libremidi::get_version());
   });
+
   // Error type returned by libremidi functions
   nb::class_<stdx::error>(m, "Error")
       .def("__bool__", [](stdx::error e) { return e != stdx::error{}; })
       .def("__str__", [](stdx::error e) { return e.message().data(); })
       .def("__repr__", [](stdx::error e) { return e.message().data(); });
+
+  // MIDI message type for input
+  nb::class_<MidiMessage>(m, "MidiMessage")
+      .def(nb::init<>())
+      .def_rw("bytes", &MidiMessage::bytes)
+      .def_rw("timestamp", &MidiMessage::timestamp)
+      .def("__repr__", [](const MidiMessage& msg) {
+        std::string result = std::to_string(msg.timestamp) + ": [";
+        for (size_t i = 0; i < msg.bytes.size(); ++i) {
+          if (i > 0) result += " ";
+          result += std::to_string(static_cast<int>(msg.bytes[i]));
+        }
+        result += "]";
+        return result;
+      });
 
   nb::class_<libremidi::port_information>(m, "PortInformation")
       .def(nb::init<>())
@@ -54,6 +145,20 @@ NB_MODULE(_libremidi, m) {
       .def("get_current_api", [](libremidi::observer &self) {
         return std::string(libremidi::get_api_name(self.get_current_api()));
       });
+
+  // MIDI Input with thread-safe message queue
+  nb::class_<MidiInWrapper>(m, "MidiIn")
+      .def(nb::init<>())
+      .def("open_port", &MidiInWrapper::open_port)
+      .def("open_virtual_port", &MidiInWrapper::open_virtual_port)
+      .def("close_port", &MidiInWrapper::close_port)
+      .def("is_port_open", &MidiInWrapper::is_port_open)
+      .def("poll", &MidiInWrapper::poll,
+           "Poll for incoming MIDI messages. Returns a list of MidiMessage objects.")
+      .def("has_messages", &MidiInWrapper::has_messages,
+           "Check if there are pending messages without consuming them.")
+      .def("absolute_timestamp", &MidiInWrapper::absolute_timestamp,
+           "Get the current absolute timestamp in nanoseconds.");
 
   nb::class_<libremidi::midi_out>(m, "MidiOut")
       .def("__init__", [](libremidi::midi_out *self) {

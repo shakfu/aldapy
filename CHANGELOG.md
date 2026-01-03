@@ -207,6 +207,25 @@ Import MIDI files and convert them to Alda for editing, manipulation, and playba
   - Import MIDI -> Edit as Alda -> Export back to MIDI
   - Import MIDI -> Apply transformations -> Play or save
 
+#### Real-Time MIDI Transcription (`aldakit.midi.transcriber`)
+
+Record MIDI input from a keyboard or controller and convert to Alda:
+
+- **Module-level functions:**
+  - `transcribe(duration, port_name, instrument, ...)` - record MIDI for a duration and return a Score
+  - `list_input_ports()` - list available MIDI input ports
+- **TranscribeSession class:**
+  - `start(port_name)` - start recording from a MIDI port
+  - `stop()` - stop recording and return a Seq
+  - `poll()` - poll for incoming messages (call periodically)
+  - `on_note(callback)` - set callback for note events (pitch, velocity, is_on)
+- **Features:**
+  - Thread-safe message queue (callbacks from C++ thread)
+  - Automatic note duration detection
+  - Configurable quantization grid
+  - Gap detection and rest insertion
+  - Pending note handling (notes still held when recording stops)
+
 ## [0.1.3]
 
 ### Changed
