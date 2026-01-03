@@ -1,9 +1,9 @@
-"""Tests for the aldapy scanner."""
+"""Tests for the aldakit scanner."""
 
 import pytest
-from aldapy.scanner import Scanner
-from aldapy.tokens import TokenType
-from aldapy.errors import AldaScanError
+from aldakit.scanner import Scanner
+from aldakit.tokens import TokenType
+from aldakit.errors import AldaScanError
 
 
 class TestBasicTokens:

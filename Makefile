@@ -10,7 +10,7 @@ endef
 all: sync
 
 sync:
-	@uv sync --reinstall-package aldapy
+	@uv sync --reinstall-package aldakit
 
 resync: reset sync
 
@@ -38,7 +38,7 @@ lint:
 	@uv run ruff check --fix src/ tests/
 
 typecheck:
-	@uv run ty check src/aldapy/
+	@uv run ty check src/aldakit/
 
 check:
 	@uv run twine check dist/*
@@ -46,7 +46,7 @@ check:
 fullcheck: format lint typecheck test
 
 publish-test: build check
-	@uv run twine upload --repository testpypi dist/*
+	@uv run twine upload --verbose --repository testpypi dist/*
 
 publish: build check
 	@uv run twine upload dist/*

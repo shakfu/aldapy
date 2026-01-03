@@ -1,4 +1,4 @@
-"""aldapy: a pythonic alda music programming language implementation."""
+"""aldakit: a pythonic alda music programming language implementation."""
 
 from .tokens import Token, TokenType, SourcePosition
 from .scanner import Scanner
@@ -49,7 +49,7 @@ from .midi import (
 )
 
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 
 __all__ = [

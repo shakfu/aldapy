@@ -1,4 +1,4 @@
-"""Interactive REPL for aldapy with syntax highlighting and completion."""
+"""Interactive REPL for aldakit with syntax highlighting and completion."""
 
 import time
 from pathlib import Path
@@ -234,7 +234,7 @@ def run_repl(port_name: str | None = None, verbose: bool = False) -> int:
     # State
     default_tempo = 120
 
-    print("aldapy REPL - AldaPyMIDI port open")
+    print("aldakit REPL - AldaPyMIDI port open")
     print("Enter alda code, press Enter to play. Alt+Enter for multi-line.")
     print("Type :help for commands, Ctrl+D to exit.")
     print()
@@ -242,7 +242,7 @@ def run_repl(port_name: str | None = None, verbose: bool = False) -> int:
     try:
         while True:
             try:
-                source = session.prompt("aldapy> ").strip()
+                source = session.prompt("aldakit> ").strip()
             except EOFError:
                 break
             except KeyboardInterrupt:

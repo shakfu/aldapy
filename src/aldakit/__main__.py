@@ -1,4 +1,4 @@
-"""Allow running aldapy as a module: python -m aldapy"""
+"""Allow running aldakit as a module: python -m aldakit"""
 
 from .cli import main
 

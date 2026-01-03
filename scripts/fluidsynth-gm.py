@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Start FluidSynth with General MIDI SoundFont for use with aldapy.
+"""Start FluidSynth with General MIDI SoundFont for use with aldakit.
 
 Environment variables:
     ALDAPY_SF2_DIR      Directory containing SoundFont files
@@ -54,12 +54,12 @@ def parse_args() -> argparse.Namespace:
     sf2_dir = get_sf2_dir()
 
     parser = argparse.ArgumentParser(
-        description="Start FluidSynth with General MIDI SoundFont for use with aldapy.",
+        description="Start FluidSynth with General MIDI SoundFont for use with aldakit.",
         epilog=(
             "Environment variables:\n"
             "  ALDAPY_SF2_DIR      Directory containing SoundFont files\n"
             "  ALDAPY_SF2_DEFAULT  Default SoundFont filename (default: FluidR3_GM.sf2)\n\n"
-            "Once running, start aldapy in another terminal: aldapy repl"
+            "Once running, start aldakit in another terminal: aldakit repl"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -147,7 +147,7 @@ def main() -> int:
 
     print(f"Starting FluidSynth with: {sf2_path.name}")
     print(f"Audio driver: {audio_driver}, MIDI driver: {midi_driver}")
-    print("Connect aldapy via: aldapy repl")
+    print("Connect aldakit via: aldakit repl")
     print("Press Ctrl+C to stop")
     print()
 

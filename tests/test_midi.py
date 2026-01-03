@@ -1,7 +1,7 @@
 """Tests for MIDI generation."""
 
-from aldapy import parse, generate_midi
-from aldapy.midi import (
+from aldakit import parse, generate_midi
+from aldakit.midi import (
     MidiSequence,
     note_to_midi,
     INSTRUMENT_PROGRAMS,

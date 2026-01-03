@@ -5,14 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.2]
+## [0.1.3]
 
 ### Changed
 
-- **Project renamed from `pyalda` to `aldapy`** for PyPI availability
-- Package import changed from `from pyalda import ...` to `from aldapy import ...`
-- Virtual MIDI port renamed from "PyAldaMIDI" to "AldaPyMIDI"
-- Environment variables renamed from `PYALDA_SF2_DIR`/`PYALDA_SF2_DEFAULT` to `ALDAPY_SF2_DIR`/`ALDAPY_SF2_DEFAULT`
+- **Project renamed from `pyalda` to `aldakit`** for PyPI availability
+- Package import changed from `from pyalda import ...` to `from aldakit import ...`
+- Virtual MIDI port renamed from "PyAldaMIDI" to "AldaKitMIDI"
+- Environment variables renamed from `PYALDA_SF2_DIR`/`PYALDA_SF2_DEFAULT` to `ALDAKIT_SF2_DIR`/`ALDAKIT_SF2_DEFAULT`
 - FluidSynth helper script converted from shell to Python (`scripts/fluidsynth-gm.py`)
   - Cross-platform support (macOS, Linux, Windows)
   - Added `--list`, `--gain`, `--audio-driver`, `--midi-driver` options
@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Interactive REPL
 
-- New `aldapy repl` subcommand for interactive music composition
+- New `aldakit repl` subcommand for interactive music composition
 - Syntax highlighting with custom color scheme (notes, durations, instruments, attributes)
 - Auto-completion for instrument names (triggers on 3+ characters)
 - Persistent command history across sessions
@@ -39,15 +39,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### CLI Subcommands
 
-- `aldapy repl` - Interactive REPL with line editing and history
-- `aldapy ports` - List available MIDI output ports
-- `aldapy play` - Explicit play command (also default behavior)
+- `aldakit repl` - Interactive REPL with line editing and history
+- `aldakit ports` - List available MIDI output ports
+- `aldakit play` - Explicit play command (also default behavior)
 
 #### libremidi Backend
 
 - Replaced mido and python-rtmidi with libremidi via nanobind
 - Low-latency realtime MIDI playback
-- Virtual MIDI port support ("AldaPyMIDI") for DAW integration
+- Virtual MIDI port support ("AldaKitMIDI") for DAW integration
 - Cross-platform support (macOS CoreMIDI, Linux ALSA, Windows)
 - Explicit platform API selection (CoreMIDI on macOS, ALSA on Linux, WinMM on Windows)
 - Support for both hardware and virtual/software MIDI ports (FluidSynth, IAC Driver, etc.)
@@ -62,14 +62,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `scripts/fluidsynth-gm.sh` helper script for FluidSynth General MIDI setup
 - Architecture diagram (`docs/architecture.d2`)
-- Design document for programmatic API extension (`docs/extending-aldapy.md`)
+- Design document for programmatic API extension (`docs/extending-aldakit.md`)
 
 ### Changed
 
-- Project renamed from `alda` to `aldapy`
+- Project renamed from `alda` to `aldakit`
 - CLI uses subcommands instead of flags for major modes
-- Virtual port name changed to "AldaPyMIDI"
-- REPL prompt changed to `aldapy>`
+- Virtual port name changed to "AldaKitMIDI"
+- REPL prompt changed to `aldakit>`
 
 ### Removed
 
@@ -126,11 +126,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Command-Line Interface
 
-- `aldapy` command (or `python -m aldapy`)
-- Play Alda files: `aldapy song.alda`
-- Inline evaluation: `aldapy -e "piano: c d e"`
-- MIDI export: `aldapy song.alda -o output.mid`
-- Parse-only mode: `aldapy song.alda --parse-only`
+- `aldakit` command (or `python -m aldakit`)
+- Play Alda files: `aldakit song.alda`
+- Inline evaluation: `aldakit -e "piano: c d e"`
+- MIDI export: `aldakit song.alda -o output.mid`
+- Parse-only mode: `aldakit song.alda --parse-only`
 - Backend selection: `--backend mido` or `--backend rtmidi`
 - Port listing: `--list-ports`
 

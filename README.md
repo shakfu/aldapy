@@ -1,6 +1,6 @@
-# aldapy
+# aldakit
 
-[![PyPI version](https://badge.fury.io/py/aldapy.svg)](https://pypi.org/project/aldapy/)
+[![PyPI version](https://badge.fury.io/py/aldakit.svg)](https://pypi.org/project/aldakit/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -13,13 +13,13 @@ A zero-dependency Python parser and MIDI generator for the [Alda](https://alda.i
 Requires Python 3.10+
 
 ```sh
-pip install aldapy
+pip install aldakit
 ```
 
 Or with [uv](https://github.com/astral-sh/uv):
 
 ```sh
-uv add aldapy
+uv add aldakit
 ```
 
 ## Quick Start
@@ -28,22 +28,22 @@ uv add aldapy
 
 ```sh
 # Evaluate inline code
-aldapy -e "piano: c d e f g"
+aldakit -e "piano: c d e f g"
 
 # Interactive REPL
-aldapy repl
+aldakit repl
 
 # Play an Alda file (examples available in the repository)
-aldapy examples/twinkle.alda
+aldakit examples/twinkle.alda
 
 # Export to MIDI file
-aldapy examples/bach-prelude.alda -o bach.mid
+aldakit examples/bach-prelude.alda -o bach.mid
 ```
 
 ### Python API
 
 ```python
-from aldapy import parse, generate_midi, LibremidiBackend
+from aldakit import parse, generate_midi, LibremidiBackend
 
 # Parse Alda source code
 ast = parse("""
@@ -67,7 +67,7 @@ with LibremidiBackend() as backend:
 ## CLI Reference
 
 ```sh
-aldapy [-h] [--version] [-e CODE] [-o FILE] [--port NAME]
+aldakit [-h] [--version] [-e CODE] [-o FILE] [--port NAME]
        [--stdin] [--parse-only] [--no-wait] [-v]
        {repl,ports,play} [file]
 ```
@@ -97,22 +97,22 @@ aldapy [-h] [--version] [-e CODE] [-o FILE] [--port NAME]
 
 ```bash
 # Interactive REPL with syntax highlighting
-aldapy repl
+aldakit repl
 
 # List available MIDI ports
-aldapy ports
+aldakit ports
 
 # Play with verbose output
-aldapy -v examples/jazz.alda
+aldakit -v examples/jazz.alda
 
 # Read from stdin
-echo "piano: c d e f g" | aldapy -
+echo "piano: c d e f g" | aldakit -
 
 # Parse and show AST
-aldapy --parse-only -e "piano: c/e/g"
+aldakit --parse-only -e "piano: c/e/g"
 
 # Export to MIDI file
-aldapy examples/twinkle.alda -o twinkle.mid
+aldakit examples/twinkle.alda -o twinkle.mid
 ```
 
 ## Interactive REPL
@@ -120,7 +120,7 @@ aldapy examples/twinkle.alda -o twinkle.mid
 The REPL provides an interactive environment for composing and playing Alda code:
 
 ```bash
-aldapy repl
+aldakit repl
 ```
 
 Features:
@@ -272,11 +272,11 @@ All 128 General MIDI instruments are supported. Common examples:
 - `acoustic-guitar`, `electric-guitar-clean`, `electric-bass`
 - `choir`, `strings`, `brass-section`
 
-See [midi/types.py](https://github.com/shakfu/aldapy/blob/main/src/aldapy/midi/types.py) for the complete mapping.
+See [midi/types.py](https://github.com/shakfu/aldakit/blob/main/src/aldakit/midi/types.py) for the complete mapping.
 
 ## MIDI Backend
 
-aldapy uses [libremidi](https://github.com/jcelerier/libremidi) via [nanobind](https://github.com/wjakob/nanobind) for cross-platform MIDI I/O:
+aldakit uses [libremidi](https://github.com/jcelerier/libremidi) via [nanobind](https://github.com/wjakob/nanobind) for cross-platform MIDI I/O:
 
 - Low-latency realtime playback
 - Virtual MIDI port support (AldaPyMIDI), makes it easy to just send to your DAW.
@@ -285,7 +285,7 @@ aldapy uses [libremidi](https://github.com/jcelerier/libremidi) via [nanobind](h
 - Supports hardware and software/virtual MIDI ports (FluidSynth, IAC Driver, etc.)
 
 ```python
-from aldapy import LibremidiBackend
+from aldakit import LibremidiBackend
 
 backend = LibremidiBackend()
 
@@ -303,9 +303,9 @@ backend.save(sequence, "output.mid")
 
 ### Virtual Port (Recommended)
 
-When no hardware MIDI ports are available, aldapy creates a virtual port named "AldaPyMIDI". This port is visible to DAWs and other MIDI software:
+When no hardware MIDI ports are available, aldakit creates a virtual port named "AldaPyMIDI". This port is visible to DAWs and other MIDI software:
 
-1. Start the REPL: `aldapy repl`
+1. Start the REPL: `aldakit repl`
 2. In your DAW (Ableton Live, Logic Pro, etc.), look for "AldaPyMIDI" in MIDI input settings
 3. Play code in the REPL - notes will be sent to your DAW
 
@@ -327,12 +327,12 @@ sudo apt install fluidsynth
 # Start FluidSynth with CoreMIDI (macOS)
 fluidsynth -a coreaudio -m coremidi ~/Music/sf2/FluidR3_GM.sf2
 
-# In another terminal, start aldapy
-aldapy repl
-# aldapy> piano: c d e f g
+# In another terminal, start aldakit
+aldakit repl
+# aldakit> piano: c d e f g
 ```
 
-A helper script is available in the [repository](https://github.com/shakfu/aldapy/tree/main/scripts):
+A helper script is available in the [repository](https://github.com/shakfu/aldakit/tree/main/scripts):
 
 ```sh
 # Set the SoundFont directory (add to your shell profile)
@@ -354,10 +354,10 @@ Connect a USB MIDI interface or synthesizer, then:
 
 ```sh
 # List available ports
-aldapy ports
+aldakit ports
 
 # Play to a specific port
-aldapy --port "My MIDI Device" examples/twinkle.alda
+aldakit --port "My MIDI Device" examples/twinkle.alda
 ```
 
 ### MIDI File Export
@@ -366,7 +366,7 @@ If you don't have MIDI playback set up, export to a file:
 
 ```bash
 # Save to MIDI file
-aldapy examples/twinkle.alda -o twinkle.mid
+aldakit examples/twinkle.alda -o twinkle.mid
 
 # Open with default app
 open twinkle.mid
@@ -377,8 +377,8 @@ open twinkle.mid
 ### Setup
 
 ```sh
-git clone https://github.com/shakfu/aldapy.git
-cd aldapy
+git clone https://github.com/shakfu/aldakit.git
+cd aldakit
 make  # Build the libremidi extension
 ```
 
@@ -392,7 +392,7 @@ uv run pytest tests/ -v
 
 ### Architecture
 
-![aldapy architecture](https://raw.githubusercontent.com/shakfu/aldapy/main/docs/assets/architecture.svg)
+![aldakit architecture](https://raw.githubusercontent.com/shakfu/aldakit/main/docs/assets/architecture.svg)
 
 ## License
 
@@ -402,6 +402,6 @@ MIT
 
 - [Alda](https://alda.io) - The original Alda language and reference implementation
 - [Alda Cheat Sheet](https://alda.io/cheat-sheet/) - Syntax reference
-- [Extending aldapy](https://github.com/shakfu/aldapy/blob/main/docs/extending-aldapy.md) - Design document for programmatic API
+- [Extending aldakit](https://github.com/shakfu/aldakit/blob/main/docs/extending-aldakit.md) - Design document for programmatic API
 - [libremidi](https://github.com/celtera/libremidi) - A modern C++ MIDI 1 / MIDI 2 real-time & file I/O library. Supports Windows, macOS, Linux and WebMIDI.
 - [nanobind](https://github.com/wjakob/nanobind) - a tiny and efficient C++/Python bindings

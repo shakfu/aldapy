@@ -1,6 +1,6 @@
-"""Demo of the aldapy parser."""
+"""Demo of the aldakit parser."""
 
-from aldapy.parser import parse
+from aldakit.parser import parse
 
 
 def main():

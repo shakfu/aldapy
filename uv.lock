@@ -3,8 +3,8 @@ revision = 3
 requires-python = ">=3.10"
 
 [[package]]
-name = "aldapy"
-version = "0.1.2"
+name = "aldakit"
+version = "0.1.3"
 source = { editable = "." }
 
 [package.dev-dependencies]

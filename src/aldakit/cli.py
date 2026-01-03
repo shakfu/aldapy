@@ -13,7 +13,7 @@ from .errors import AldaParseError
 def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser."""
     parser = argparse.ArgumentParser(
-        prog="aldapy",
+        prog="aldakit",
         description="Parse and play Alda music files.",
     )
 
