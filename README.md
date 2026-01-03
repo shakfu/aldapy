@@ -129,6 +129,44 @@ Available compose elements:
 - **Attributes**: `tempo(120)`, `volume(80)`, `octave(5)`, `panning(50)`
 - **Dynamics**: `pp()`, `p()`, `mp()`, `mf()`, `f()`, `ff()`
 
+### Transformers
+
+Transform sequences with pitch and structural operations:
+
+```python
+from aldakit.compose import (
+    note, seq,
+    transpose, invert, reverse, shuffle,
+    augment, diminish, fragment, loop, interleave,
+    pipe,
+)
+
+# Create a motif
+motif = seq(note("c", duration=8), note("d", duration=8), note("e", duration=8))
+
+# Pitch transformers
+up_fourth = transpose(motif, 5)      # Transpose up 5 semitones
+inverted = invert(motif)             # Invert intervals around first note
+backwards = reverse(motif)           # Retrograde
+
+# Structural transformers
+longer = augment(motif, 2)           # Double durations (8th -> quarter)
+shorter = diminish(motif, 2)         # Halve durations (8th -> 16th)
+first_two = fragment(motif, 2)       # Take first 2 elements
+repeated = loop(motif, 4)            # Repeat 4 times (explicit)
+
+# Chain transformations with pipe
+result = pipe(
+    motif,
+    lambda s: transpose(s, 5),
+    reverse,
+    lambda s: augment(s, 2),
+)
+
+# All transforms preserve to_alda() export
+print(result.to_alda())
+```
+
 ## CLI Reference
 
 ```sh

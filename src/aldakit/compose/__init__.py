@@ -54,6 +54,27 @@ from .attributes import (
     f,
     ff,
 )
+from .transform import (
+    # Pitch transformers
+    transpose,
+    invert,
+    reverse,
+    shuffle,
+    retrograde_inversion,
+    # Structural transformers
+    augment,
+    diminish,
+    fragment,
+    loop,
+    interleave,
+    rotate,
+    take_every,
+    split,
+    concat,
+    # Helpers
+    pipe,
+    identity,
+)
 
 __all__ = [
     # Base
@@ -97,4 +118,23 @@ __all__ = [
     "mf",
     "f",
     "ff",
+    # Pitch transformers
+    "transpose",
+    "invert",
+    "reverse",
+    "shuffle",
+    "retrograde_inversion",
+    # Structural transformers
+    "augment",
+    "diminish",
+    "fragment",
+    "loop",
+    "interleave",
+    "rotate",
+    "take_every",
+    "split",
+    "concat",
+    # Helpers
+    "pipe",
+    "identity",
 ]

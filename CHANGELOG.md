@@ -57,6 +57,30 @@ Programmatic music composition with domain objects that generate AST directly (n
   - `to_ast()` - generate AST node directly
   - `to_alda()` - generate Alda source code
 
+#### Transform Module (`aldakit.compose.transform`)
+
+AST-level transformers for musical sequences (can be exported back to Alda):
+
+- **Pitch transformers:**
+  - `transpose(seq, semitones)` - transpose all notes by semitones
+  - `invert(seq, axis)` - invert intervals around an axis pitch
+  - `reverse(seq)` - retrograde (reverse order)
+  - `shuffle(seq, seed)` - random permutation
+  - `retrograde_inversion(seq)` - combined reverse + invert
+- **Structural transformers:**
+  - `augment(seq, factor)` - lengthen durations (e.g., 8th -> quarter)
+  - `diminish(seq, factor)` - shorten durations (e.g., quarter -> 8th)
+  - `fragment(seq, length)` - take first N elements
+  - `loop(seq, times)` - repeat sequence (explicit duplication)
+  - `interleave(*seqs)` - alternate elements from multiple sequences
+  - `rotate(seq, positions)` - rotate elements left/right
+  - `take_every(seq, n, offset)` - sample every Nth element
+  - `split(seq, size)` - split into chunks
+  - `concat(*seqs)` - concatenate sequences
+- **Helpers:**
+  - `pipe(seq, *transforms)` - chain multiple transformations
+  - `identity(seq)` - return sequence unchanged (placeholder)
+
 ## [0.1.3]
 
 ### Changed
