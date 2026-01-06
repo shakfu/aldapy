@@ -66,6 +66,7 @@ wheel.exclude = [
     "include/**",
     "lib/**",
     "aldakit/_libremidi.cpp",
+    "aldakit/_tsf.cpp",
 ]
 
 [tool.pytest.ini_options]

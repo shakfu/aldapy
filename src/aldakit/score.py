@@ -459,19 +459,47 @@ class Score:
         else:
             return " ".join(e.to_alda() for e in self._elements)
 
-    def play(self, port: str | None = None, wait: bool = True) -> None:
-        """Play the score through a MIDI port.
+    def play(
+        self,
+        port: str | None = None,
+        wait: bool = True,
+        backend: str = "midi",
+        soundfont: str | None = None,
+    ) -> None:
+        """Play the score.
 
         Args:
-            port: MIDI output port name. If None, uses the first available
-                port or creates a virtual port named "AldakitMIDI".
+            port: MIDI output port name (for backend="midi"). If None, uses
+                the first available port or creates a virtual port.
             wait: If True (default), block until playback completes.
+            backend: Backend to use: "midi" (default) or "audio".
+                - "midi": Send to MIDI port via libremidi (requires external synth)
+                - "audio": Direct audio output via TinySoundFont (requires SoundFont)
+            soundfont: Path to SoundFont file (for backend="audio"). If None,
+                searches common locations or uses ALDAKIT_SOUNDFONT env var.
+
+        Raises:
+            RuntimeError: If the selected backend is not available.
+            FileNotFoundError: If backend="audio" and no SoundFont is found.
         """
-        with LibremidiBackend(port_name=port) as backend:
-            backend.play(self.midi)
-            if wait:
-                while backend.is_playing():
-                    time.sleep(0.1)
+        if backend == "audio":
+            from .midi.backends import TsfBackend, HAS_TSF
+
+            if not HAS_TSF:
+                raise RuntimeError(
+                    "Audio backend not available. The _tsf module was not built."
+                )
+            with TsfBackend(soundfont=soundfont) as audio_backend:
+                audio_backend.play(self.midi)
+                if wait:
+                    audio_backend.wait()
+        else:
+            # Default: MIDI backend
+            with LibremidiBackend(port_name=port) as midi_backend:
+                midi_backend.play(self.midi)
+                if wait:
+                    while midi_backend.is_playing():
+                        time.sleep(0.1)
 
     def save(self, path: str | Path) -> None:
         """Save the score to a file.

@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Direct Audio Playback via TinySoundFont
+
+Self-contained audio synthesis without requiring an external MIDI synthesizer:
+
+- **New `_tsf` native module** - TinySoundFont + miniaudio integration via nanobind
+  - Header-only libraries for minimal binary size (~50KB)
+  - Cross-platform audio output (CoreAudio, ALSA, WASAPI)
+  - Real-time SoundFont synthesis at 44.1kHz stereo
+
+- **New `TsfBackend` class** (`aldakit.midi.backends.TsfBackend`)
+  - Drop-in replacement for `LibremidiBackend` when no external synth is available
+  - Automatic SoundFont discovery in common locations
+  - Environment variable support (`ALDAKIT_SOUNDFONT`)
+  - `play()`, `stop()`, `wait()`, `is_playing()`, `current_time()` methods
+  - Preset inspection: `preset_count`, `preset_name(index)`
+  - Adjustable gain via `set_gain()`
+
+- **`Score.play()` backend parameter**
+  - `score.play(backend="audio")` - direct audio output via TinySoundFont
+  - `score.play(backend="midi")` - MIDI output via libremidi (default, unchanged)
+  - `score.play(backend="audio", soundfont="/path/to/sf2")` - explicit SoundFont
+
+- **SoundFont utilities** (`aldakit.midi.soundfont`)
+  - `find_soundfont()` - search common locations for GM SoundFont
+  - `list_soundfonts()` - list all discovered SoundFont files
+  - `download_soundfont(name)` - download from public archives
+  - `setup_soundfont()` - interactive setup with progress display
+  - Catalog includes TimGM6mb (5.8MB), FluidR3_GM (141MB), GeneralUser_GS (31MB)
+
+- **29 new tests** for TsfBackend (`tests/test_tsf_backend.py`)
+
+### Changed
+
+- Development status changed from Beta to Alpha in `pyproject.toml`
+
 ## [0.1.6]
 
 ### Fixed

@@ -36,5 +36,5 @@ This keeps zero-dependency wheels lean, yet unlocks responsive MIDI I/O for cont
 ### Long-term
 
 1. **MIDI 2.0**: libremidi supports MIDI 2.0; consider exposing these features
-2. **Audio Output**: Direct audio rendering without external synthesizer: an idea would be to embed fluidsynth itself.
+2. **Audio Output**: Direct audio rendering without external synthesizer: an idea would be to embed [TinySoundFont](https://github.com/schellingb/TinySoundFont).
 3. **IDE Integration**: Language server protocol (LSP) for editor support

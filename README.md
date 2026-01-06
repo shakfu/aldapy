@@ -6,12 +6,13 @@
 
 A zero-dependency Python parser and MIDI generator for the [Alda](https://alda.io) music programming language[^1].
 
-[^1]: Includes a rich repl and native MIDI support via bundled [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit) and [libremidi](https://github.com/jcelerier/libremidi) respectively.
+[^1]: Includes a rich REPL, native MIDI, and built-in audio via bundled [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit), [libremidi](https://github.com/jcelerier/libremidi), and [TinySoundFont](https://github.com/schellingb/TinySoundFont) respectively.
 
 ## Features
 
 - **Alda Parser** - Full parser for the Alda music language with AST generation
 - **MIDI Playback** - Low-latency playback via libremidi (CoreMIDI, ALSA, WinMM)
+- **Audio Playback** - Built-in synthesis via TinySoundFont (no external synth required)
 - **MIDI Export** - Save compositions as Standard MIDI Files
 - **MIDI Import** - Load MIDI files and convert to Alda notation
 - **Real-time Transcription** - Record from MIDI keyboards and convert to Alda
@@ -687,6 +688,91 @@ aldakit.play("piano: c d e f g", port="FluidSynth")
 aldakit.save("piano: c d e f g", "output.mid")
 ```
 
+## Audio Backend (Built-in)
+
+For self-contained audio playback without external synthesizers, aldakit includes a built-in audio backend powered by [TinySoundFont](https://github.com/schellingb/TinySoundFont) and [miniaudio](https://github.com/mackron/miniaudio):
+
+- Direct audio output (no FluidSynth or DAW required)
+- Cross-platform: macOS (CoreAudio), Linux (ALSA/PulseAudio), Windows (WASAPI)
+- Requires a SoundFont file (.sf2) for instrument sounds
+- Header-only libraries for minimal binary size
+
+### Basic Usage
+
+```python
+from aldakit import Score
+
+# Play with built-in audio (requires SoundFont)
+score = Score("piano: c d e f g")
+score.play(backend="audio")
+
+# Specify SoundFont explicitly
+score.play(backend="audio", soundfont="/path/to/FluidR3_GM.sf2")
+```
+
+### SoundFont Setup
+
+The audio backend requires a General MIDI SoundFont file. aldakit searches these locations automatically:
+
+- `$ALDAKIT_SOUNDFONT` environment variable
+- `~/Music/sf2/`
+- `~/.aldakit/soundfonts/`
+- `/usr/share/soundfonts/` (Linux)
+
+**Option 1: Download manually**
+
+Download a SoundFont and place it in `~/Music/sf2/`:
+- [FluidR3_GM.sf2](https://archive.org/download/fluidr3-gm-gs/FluidR3_GM.sf2) (141 MB, high quality)
+- [TimGM6mb.sf2](https://archive.org/download/TimGM6mb/TimGM6mb.sf2) (5.8 MB, compact)
+- [GeneralUser_GS.sf2](https://archive.org/download/GeneralUserGS/GeneralUser_GS_1.471.sf2) (31 MB, balanced)
+
+**Option 2: Auto-download**
+
+```python
+from aldakit.midi.soundfont import setup_soundfont
+
+# Downloads TimGM6mb.sf2 (~6 MB) to ~/.aldakit/soundfonts/
+setup_soundfont()
+```
+
+**Option 3: Environment variable**
+
+```bash
+export ALDAKIT_SOUNDFONT=/path/to/your/soundfont.sf2
+```
+
+### Using TsfBackend Directly
+
+```python
+from aldakit import Score
+from aldakit.midi.backends import TsfBackend
+
+# Create backend with specific SoundFont
+with TsfBackend(soundfont="~/Music/sf2/FluidR3_GM.sf2") as backend:
+    score = Score("piano: c/e/g")
+    backend.play(score.midi)
+    backend.wait()  # Block until playback completes
+
+# Inspect SoundFont presets
+backend = TsfBackend()
+print(f"Presets: {backend.preset_count}")
+for i in range(min(10, backend.preset_count)):
+    print(f"  {i}: {backend.preset_name(i)}")
+```
+
+### Audio vs MIDI Backend
+
+| Feature | Audio (`backend="audio"`) | MIDI (`backend="midi"`) |
+|---------|---------------------------|-------------------------|
+| External synth required | No | Yes (FluidSynth, DAW, hardware) |
+| Setup complexity | Just needs SoundFont | Requires MIDI routing |
+| Sound quality | Depends on SoundFont | Depends on synth |
+| DAW integration | No | Yes (virtual port) |
+| Latency | Very low | Very low |
+| Effects (reverb, etc.) | No | Depends on synth |
+
+**Recommendation:** Use `backend="audio"` for quick playback and standalone use. Use `backend="midi"` (default) for DAW integration, hardware synths, or when you need effects.
+
 ## MIDI Playback Setup
 
 ### Virtual Port (Recommended)
@@ -792,4 +878,6 @@ MIT
 - [Alda Cheat Sheet](https://alda.io/cheat-sheet/) - Syntax reference
 - [Extending aldakit](https://github.com/shakfu/aldakit/blob/main/docs/extending-aldakit.md) - Design document for programmatic API
 - [libremidi](https://github.com/celtera/libremidi) - A modern C++ MIDI 1 / MIDI 2 real-time & file I/O library. Supports Windows, macOS, Linux and WebMIDI.
+- [TinySoundFont](https://github.com/schellingb/TinySoundFont) - SoundFont2 synthesizer library in a single C/C++ header
+- [miniaudio](https://github.com/mackron/miniaudio) - Single-header audio playback and capture library
 - [nanobind](https://github.com/wjakob/nanobind) - a tiny and efficient C++/Python bindings
