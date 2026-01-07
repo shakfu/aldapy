@@ -4,6 +4,11 @@
  * Provides direct audio synthesis from MIDI events using SoundFont files.
  */
 
+// Prevent Windows headers from defining min/max macros
+#ifdef _WIN32
+#define NOMINMAX
+#endif
+
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
