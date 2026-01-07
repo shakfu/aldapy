@@ -22,21 +22,21 @@ SOUNDFONT_CATALOG = {
         "filename": "TimGM6mb.sf2",
         "size_mb": 5.8,
         "description": "Compact GM SoundFont, good quality for size",
-        "sha256": None,  # Optional verification
+        "sha256": "82475b91a76de15cb28a104707d3247ba932e228bada3f47bba63c6b31aaf7a1",
     },
     "FluidR3_GM": {
         "url": "https://archive.org/download/fluidr3-gm-gs/FluidR3_GM.sf2",
         "filename": "FluidR3_GM.sf2",
         "size_mb": 141,
         "description": "High-quality GM SoundFont (large)",
-        "sha256": None,
+        "sha256": "74594e8f4250680adf590507a306655a299935343583256f3b722c48a1bc1cb0",
     },
     "GeneralUser_GS": {
         "url": "https://archive.org/download/GeneralUserGS/GeneralUser_GS_1.471.sf2",
         "filename": "GeneralUser_GS.sf2",
         "size_mb": 31,
         "description": "Well-balanced GM/GS SoundFont",
-        "sha256": None,
+        "sha256": "f45b6b4a68b6bf3d792fcbb6d7de24dc701a0f89c5900a21ef3aaece993b839a",
     },
 }
 

@@ -498,6 +498,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.stdin:
         return stdin_mode(args.port, args.verbose)
 
+    # If no file, no -e, and no --stdin, open the REPL
+    if args.file is None and args.eval is None:
+        from .repl import run_repl
+
+        return run_repl(args.port, getattr(args, "verbose", False))
+
     # Read source
     try:
         source, filename = read_source(args)

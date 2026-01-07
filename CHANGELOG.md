@@ -43,6 +43,7 @@ Self-contained audio synthesis without requiring an external MIDI synthesizer:
 ### Changed
 
 - Development status changed from Beta to Alpha in `pyproject.toml`
+- **CLI now opens REPL by default** when run without arguments (`aldakit` is now equivalent to `aldakit repl`)
 
 ## [0.1.6]
 
