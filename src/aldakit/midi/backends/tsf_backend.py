@@ -243,11 +243,17 @@ class TsfBackend(MidiBackend):
         """Set global volume gain (0.0 - 2.0)."""
         self._player.set_gain(gain)
 
-    def play(self, sequence: MidiSequence) -> None:
+    def play(self, sequence: MidiSequence) -> int | None:
         """Play a MIDI sequence through the audio output.
+
+        Note: TsfBackend does not currently support concurrent playback.
+        Calling play() will stop any currently playing sequence.
 
         Args:
             sequence: The MIDI sequence to play.
+
+        Returns:
+            0 to indicate playback started (single slot).
         """
         self._player.clear_schedule()
 
@@ -266,6 +272,7 @@ class TsfBackend(MidiBackend):
             )
 
         self._player.play()
+        return 0
 
     def save(self, sequence: MidiSequence, path: Path | str) -> None:
         """Save a MIDI sequence to a file.

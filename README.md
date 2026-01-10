@@ -42,17 +42,21 @@ uv add aldakit
 ### Command Line
 
 ```sh
+# Interactive REPL (default when no args)
+aldakit
+
 # Evaluate inline code
-aldakit -e "piano: c d e f g"
+aldakit eval "piano: c d e f g"
 
-# Interactive REPL
-aldakit repl
-
-# Play an Alda file (examples available in the repository)
-aldakit examples/twinkle.alda
+# Play an Alda file
+aldakit play examples/twinkle.alda
 
 # Export to MIDI file
-aldakit examples/bach-prelude.alda -o bach.mid
+aldakit play examples/bach-prelude.alda -o bach.mid
+
+# Use built-in audio (TinySoundFont) instead of MIDI
+aldakit play -sf ~/Music/sf2/FluidR3_GM.sf2 examples/twinkle.alda
+aldakit repl -sf ~/Music/sf2/FluidR3_GM.sf2
 ```
 
 ### Python API
@@ -94,6 +98,37 @@ score.save("output.mid")
 print(f"Duration: {score.duration}s")
 print(score.ast)   # Parsed AST
 print(score.midi)  # MIDI sequence
+```
+
+### Concurrent Playback
+
+Layer multiple sequences for polyphonic REPL-style playback:
+
+```python
+from aldakit.midi.backends import LibremidiBackend
+
+# Create backend with concurrent mode (default)
+backend = LibremidiBackend(concurrent=True)
+
+# Play multiple sequences - they layer on top of each other
+backend.play(score1.midi)  # Starts immediately
+backend.play(score2.midi)  # Layers on top of score1
+backend.play(score3.midi)  # Up to 8 concurrent slots
+
+# Check status
+print(f"Active slots: {backend.active_slots}")
+print(f"Playing: {backend.is_playing()}")
+
+# Wait for all playback to complete
+backend.wait()
+
+# Or stop all playback immediately
+backend.stop()
+
+# Sequential mode - each play waits for previous to finish
+backend.concurrent_mode = False
+backend.play(score1.midi)  # Plays first
+backend.play(score2.midi)  # Waits, then plays second
 ```
 
 ### MIDI Import
@@ -425,64 +460,134 @@ score.play()
 ## CLI Reference
 
 ```sh
-aldakit [-h] [--version] [-e CODE] [-o FILE] [--port NAME|INDEX]
-       [--stdin] [--parse-only] [--no-wait] [-v]
-       {repl,ports,transcribe,play} [file]
+aldakit [--version] [-h] {repl,play,eval,ports,transcribe} ...
 ```
 
 ### Subcommands
 
 | Command | Description |
 | ------- | ----------- |
+| (none) | Opens the interactive REPL (default when no args) |
 | `repl` | Interactive REPL with syntax highlighting and auto-completion |
+| `play` | Play an Alda file |
+| `eval` | Evaluate Alda code directly |
 | `ports` | List available MIDI ports (both input and output) |
 | `transcribe` | Record MIDI input and output Alda code |
-| `play` | Play an Alda file or code (default behavior) |
 
-### Options
+### Global Options
 
 | Option | Description |
 | ------ | ----------- |
-| `file` | Alda file to play (use `-` for stdin) |
-| `-e, --eval CODE` | Evaluate Alda code directly |
+| `--version` | Show version number and exit |
+| `-h, --help` | Show help message |
+
+### `play` Subcommand
+
+```sh
+aldakit play [-v] [-o FILE] [--port NAME|INDEX] [-sf FILE] [--stdin] [--parse-only] [--no-wait] FILE
+```
+
+| Option | Description |
+| ------ | ----------- |
+| `FILE` | Alda file to play (use `-` for stdin) |
+| `-v, --verbose` | Verbose output |
 | `-o, --output FILE` | Save to MIDI file instead of playing |
-| `--port NAME\|INDEX` | MIDI port by name or index (see `aldakit ports`). Auto-selects if only one port available. |
+| `--port NAME\|INDEX` | MIDI port by name or index (see `aldakit ports`) |
+| `-sf, --soundfont FILE` | Use TinySoundFont audio backend with specified SoundFont |
 | `--stdin` | Read from stdin (blank line to play) |
 | `--parse-only` | Print AST without playing |
 | `--no-wait` | Don't wait for playback to finish |
+
+### `eval` Subcommand
+
+```sh
+aldakit eval [-v] [-o FILE] [--port NAME|INDEX] [-sf FILE] CODE
+```
+
+| Option | Description |
+| ------ | ----------- |
+| `CODE` | Alda code to evaluate |
 | `-v, --verbose` | Verbose output |
+| `-o, --output FILE` | Save to MIDI file instead of playing |
+| `--port NAME\|INDEX` | MIDI port by name or index |
+| `-sf, --soundfont FILE` | Use TinySoundFont audio backend |
+
+### `repl` Subcommand
+
+```sh
+aldakit repl [-v] [--port NAME|INDEX] [-sf FILE] [--sequential]
+```
+
+| Option | Description |
+| ------ | ----------- |
+| `-v, --verbose` | Verbose output |
+| `--port NAME\|INDEX` | MIDI port by name or index |
+| `-sf, --soundfont FILE` | Use TinySoundFont audio backend |
+| `--sequential` | Start in sequential mode (wait for each input) |
+
+### `transcribe` Subcommand
+
+```sh
+aldakit transcribe [-d SEC] [-i INST] [-t BPM] [-q GRID] [-o FILE] [--port NAME] [--play] [-v] [--alda-notes] [--feel FEEL] [--swing-ratio RATIO]
+```
+
+| Option | Description |
+| ------ | ----------- |
+| `-d, --duration SEC` | Recording duration in seconds (default: 10) |
+| `-i, --instrument NAME` | Instrument name (default: piano) |
+| `-t, --tempo BPM` | Tempo for quantization (default: 120) |
+| `-q, --quantize GRID` | Quantize grid in beats (default: 0.25 = 16th notes) |
+| `-o, --output FILE` | Save to file (.alda or .mid) |
+| `--port NAME` | MIDI input port name |
+| `--play` | Play back the recording after transcription |
+| `-v, --verbose` | Show notes as they are played |
+| `--alda-notes` | Show notes in Alda notation (with -v) |
+| `--feel FEEL` | Rhythm feel: straight, swing, triplet, quintuplet |
+| `--swing-ratio RATIO` | Swing ratio between 0 and 1 (default: 0.67) |
 
 ### Examples
 
 ```bash
-# Interactive REPL with syntax highlighting
+# Interactive REPL (default when no args)
+aldakit
 aldakit repl
 
-# List available MIDI ports (input and output)
+# Evaluate inline code
+aldakit eval "piano: c d e f g"
+
+# Play a file
+aldakit play examples/jazz.alda
+aldakit play -v examples/jazz.alda  # verbose
+
+# Play to a specific port (by index or name)
+aldakit play --port 0 examples/twinkle.alda
+aldakit play --port FluidSynth examples/twinkle.alda
+
+# Use built-in audio (TinySoundFont) instead of MIDI
+aldakit play -sf ~/Music/sf2/FluidR3_GM.sf2 examples/twinkle.alda
+aldakit repl -sf ~/Music/sf2/FluidR3_GM.sf2
+
+# Read from stdin
+echo "piano: c d e f g" | aldakit play -
+aldakit play --stdin
+
+# Parse and show AST
+aldakit play --parse-only examples/twinkle.alda
+aldakit eval --parse-only "piano: c/e/g"
+
+# Export to MIDI file
+aldakit play examples/twinkle.alda -o twinkle.mid
+aldakit eval "piano: c d e f g" -o output.mid
+
+# List available MIDI ports
 aldakit ports
 aldakit ports -o  # output ports only
 aldakit ports -i  # input ports only
 
-# Play with verbose output
-aldakit -v examples/jazz.alda
-
-# Play to a specific port (by index or name)
-aldakit --port 0 examples/twinkle.alda
-aldakit --port FluidSynth examples/twinkle.alda
-
-# Read from stdin
-echo "piano: c d e f g" | aldakit -
-
-# Parse and show AST
-aldakit --parse-only -e "piano: c/e/g"
-
-# Export to MIDI file
-aldakit examples/twinkle.alda -o twinkle.mid
-
 # Record MIDI input for 10 seconds (default)
 aldakit transcribe
 
-# Record from a specific input port (by index or name)
+# Record from a specific input port
 aldakit transcribe --port 0
 aldakit transcribe --port "My MIDI Keyboard"
 

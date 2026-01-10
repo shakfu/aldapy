@@ -26,6 +26,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Quoted list syntax** in S-expressions (`'(...)`) - Lisp-style quoted lists now fully parsed
 
+- **Concurrent playback mode** for LibremidiBackend
+  - Up to 8 simultaneous playback slots
+  - `concurrent_mode` property (default True) to enable/disable layered playback
+  - `active_slots` property to check number of active playbacks
+  - `wait()` method to block until all playback completes
+  - `stop()` stops all slots, `stop_slot(id)` stops a specific one
+  - Thread-safe MIDI message sending
+  - Inspired by alda-midi's libuv-based async system
+
+- **REPL concurrent playback integration**
+  - Concurrent mode enabled by default - inputs layer on each other
+  - `:concurrent` command to enable concurrent mode
+  - `:sequential` command to enable sequential mode (wait for each input)
+  - `:status` command to show playback mode and active slots
+  - `--sequential` CLI flag to start REPL in sequential mode
+
+- **CLI audio backend option**
+  - `-sf` / `--soundfont FILE` to use TinySoundFont audio backend
+  - Available for both REPL (`aldakit repl -sf ...`) and play (`aldakit play -sf ... file.alda`)
+  - Clear error message when no MIDI ports available, directing user to use `-sf`
+
+- **CLI reorganization**
+  - New `eval` subcommand: `aldakit eval "piano: c d e"`
+  - Top-level now only has `--version` and `--help`
+  - All options moved to their respective subcommands
+  - `aldakit` with no args opens the REPL
+
 ### Fixed
 
 - **Windows build failure in `_tsf.cpp`** - Added `#define NOMINMAX` to prevent Windows SDK `min`/`max` macro conflicts with `std::min`/`std::max`

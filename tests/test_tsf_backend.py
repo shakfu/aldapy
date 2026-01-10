@@ -292,6 +292,23 @@ class TestScoreAudioBackend:
         score.play(backend="audio", wait=True)
         assert score.duration > 0
 
+    def test_score_play_duet_example(self, soundfont_path):
+        """Test playing duet.alda with TinySoundFont audio synthesis."""
+        # Load and play duet.alda - tests multi-instrument audio synthesis
+        duet_path = Path(__file__).parent.parent / "examples" / "duet.alda"
+        source = duet_path.read_text()
+
+        score = Score(source)
+
+        # Verify it has notes from both instruments
+        midi = score.midi
+        channels = set(note.channel for note in midi.notes)
+        assert len(channels) == 2, f"Expected 2 channels (violin, cello), got {channels}"
+
+        # Play with audio backend
+        score.play(backend="audio", wait=True)
+        assert score.duration > 0
+
 
 class TestTsfBackendSave:
     """Test TsfBackend.save() method."""

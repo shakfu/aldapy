@@ -41,6 +41,17 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print verbose output",
     )
+    repl_parser.add_argument(
+        "--sequential",
+        action="store_true",
+        help="Use sequential mode (wait for each input to finish)",
+    )
+    repl_parser.add_argument(
+        "-sf",
+        "--soundfont",
+        metavar="FILE",
+        help="Use TinySoundFont audio backend with specified SoundFont file",
+    )
 
     # ports subcommand
     ports_parser = subparsers.add_parser(
@@ -138,21 +149,53 @@ def create_parser() -> argparse.ArgumentParser:
         help="Show notes in Alda notation (requires -v)",
     )
 
-    # play subcommand (also the default)
+    # play subcommand
     play_parser = subparsers.add_parser(
         "play",
         help="Play an Alda file or code",
     )
     _add_play_arguments(play_parser)
 
-    # Add play arguments to main parser for default behavior
-    _add_play_arguments(parser)
+    # eval subcommand (shorthand for play -e)
+    eval_parser = subparsers.add_parser(
+        "eval",
+        help="Evaluate Alda code directly",
+    )
+    eval_parser.add_argument(
+        "code",
+        metavar="CODE",
+        help="Alda code to evaluate",
+    )
+    eval_parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Print verbose output",
+    )
+    eval_parser.add_argument(
+        "-sf",
+        "--soundfont",
+        metavar="FILE",
+        help="Use TinySoundFont audio backend with specified SoundFont file",
+    )
+    eval_parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        metavar="FILE",
+        help="Save to MIDI file instead of playing",
+    )
+    eval_parser.add_argument(
+        "--port",
+        metavar="NAME",
+        help="MIDI output port name or index (see 'aldakit ports')",
+    )
 
     return parser
 
 
 def _add_play_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add arguments for playing Alda code."""
+    """Add arguments for the play subcommand."""
     parser.add_argument(
         "file",
         nargs="?",
@@ -204,6 +247,13 @@ def _add_play_arguments(parser: argparse.ArgumentParser) -> None:
         "--verbose",
         action="store_true",
         help="Print verbose output",
+    )
+
+    parser.add_argument(
+        "-sf",
+        "--soundfont",
+        metavar="FILE",
+        help="Use TinySoundFont audio backend with specified SoundFont file",
     )
 
 
@@ -378,21 +428,22 @@ def read_source(args: argparse.Namespace) -> tuple[str, str]:
     if args.eval:
         return args.eval, "<eval>"
 
-    if args.file is None:
+    file_arg = getattr(args, "file", None)
+    if file_arg is None:
         print(
-            "Error: No input file specified. Use -e for inline code or provide a file.",
+            "Error: No input file specified. Use -e for inline code or 'aldakit play <file>'.",
             file=sys.stderr,
         )
         sys.exit(1)
 
-    if str(args.file) == "-":
+    if str(file_arg) == "-":
         return sys.stdin.read(), "<stdin>"
 
-    if not args.file.exists():
-        print(f"Error: File not found: {args.file}", file=sys.stderr)
+    if not file_arg.exists():
+        print(f"Error: File not found: {file_arg}", file=sys.stderr)
         sys.exit(1)
 
-    return args.file.read_text(), str(args.file)
+    return file_arg.read_text(), str(file_arg)
 
 
 def _resolve_port_specifier(
@@ -476,7 +527,15 @@ def main(argv: list[str] | None = None) -> int:
         port, ok = _resolve_output_port(args.port)
         if not ok:
             return 1
-        return run_repl(port, args.verbose)
+        concurrent = not getattr(args, "sequential", False)
+        soundfont = getattr(args, "soundfont", None)
+        return run_repl(
+            port,
+            args.verbose,
+            concurrent=concurrent,
+            use_audio=soundfont is not None,
+            soundfont=soundfont,
+        )
 
     if args.command == "ports":
         show_inputs = args.inputs or not args.outputs
@@ -487,22 +546,49 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "transcribe":
         return transcribe_command(args)
 
-    # Resolve port specifier early (can be index like "0" or name)
-    port, ok = _resolve_output_port(args.port)
+    if args.command == "eval":
+        # Convert eval command to play with -e
+        args.eval = args.code
+        args.file = None
+        args.stdin = False
+        args.parse_only = False
+        args.no_wait = False
+        # Fall through to play handling
+
+    # Handle play/eval subcommand or default behavior
+    # Get optional attributes with defaults
+    stdin_mode_flag = getattr(args, "stdin", False)
+    port_arg = getattr(args, "port", None)
+    parse_only = getattr(args, "parse_only", False)
+    no_wait = getattr(args, "no_wait", False)
+    output = getattr(args, "output", None)
+    soundfont = getattr(args, "soundfont", None)
+    verbose = getattr(args, "verbose", False)
+
+    # Resolve port specifier (can be index like "0" or name)
+    port, ok = _resolve_output_port(port_arg)
     if not ok:
         return 1
-    args.port = port
 
-    # Handle play subcommand or default behavior
-    # Handle --stdin
-    if args.stdin:
-        return stdin_mode(args.port, args.verbose)
-
-    # If no file, no -e, and no --stdin, open the REPL
-    if args.file is None and args.eval is None:
+    # If no subcommand given, open the REPL
+    if args.command is None:
         from .repl import run_repl
 
-        return run_repl(args.port, getattr(args, "verbose", False))
+        return run_repl(port, verbose, concurrent=True)
+
+    # Handle --stdin (play subcommand only)
+    if stdin_mode_flag:
+        return stdin_mode(port, verbose)
+
+    # If no file and no -e in play subcommand, show error
+    file_arg = getattr(args, "file", None)
+    eval_code = getattr(args, "eval", None)
+    if args.command == "play" and file_arg is None and eval_code is None:
+        print(
+            "Error: No input specified. Use 'aldakit play <file>' or 'aldakit eval <code>'.",
+            file=sys.stderr,
+        )
+        return 1
 
     # Read source
     try:
@@ -511,7 +597,7 @@ def main(argv: list[str] | None = None) -> int:
         return 130
 
     # Parse
-    if args.verbose:
+    if verbose:
         print(f"Parsing {filename}...", file=sys.stderr)
 
     try:
@@ -521,12 +607,12 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     # Handle --parse-only
-    if args.parse_only:
+    if parse_only:
         print(ast)
         return 0
 
     # Generate MIDI
-    if args.verbose:
+    if verbose:
         print("Generating MIDI...", file=sys.stderr)
 
     sequence = generate_midi(ast)
@@ -535,46 +621,88 @@ def main(argv: list[str] | None = None) -> int:
         print("Warning: No notes generated.", file=sys.stderr)
         return 0
 
-    if args.verbose:
+    if verbose:
         print(
             f"Generated {len(sequence.notes)} notes, duration: {sequence.duration():.2f}s",
             file=sys.stderr,
         )
 
     # Handle --output (save to file)
-    if args.output:
-        if args.verbose:
-            print(f"Saving to {args.output}...", file=sys.stderr)
+    if output:
+        if verbose:
+            print(f"Saving to {output}...", file=sys.stderr)
 
         backend = LibremidiBackend()
-        backend.save(sequence, args.output)
-        print(f"Saved to {args.output}")
+        backend.save(sequence, output)
+        print(f"Saved to {output}")
         return 0
 
+    # Determine backend: --soundfont implies audio
+    use_audio = soundfont is not None
+
+    if not use_audio and port is None:
+        # Check if any MIDI output ports are available
+        ports = LibremidiBackend().list_output_ports()
+        if not ports:
+            print(
+                "No MIDI output ports available.",
+                file=sys.stderr,
+            )
+            print(
+                "Use -sf /path/to/soundfont.sf2 for TinySoundFont audio backend.",
+                file=sys.stderr,
+            )
+            return 1
+
     # Play
-    if args.verbose:
-        print("Playing...", file=sys.stderr)
+    if verbose:
+        backend_name = "audio (TinySoundFont)" if use_audio else "MIDI"
+        print(f"Playing via {backend_name}...", file=sys.stderr)
 
     try:
-        backend = LibremidiBackend(port_name=args.port)
+        if use_audio:
+            from .midi.backends import TsfBackend, HAS_TSF
 
-        with backend:
-            backend.play(sequence)
+            if not HAS_TSF:
+                print(
+                    "Error: Audio backend not available. The _tsf module was not built.",
+                    file=sys.stderr,
+                )
+                return 1
 
-            if not args.no_wait:
-                # Wait for playback to finish
-                try:
-                    while backend.is_playing():
-                        time.sleep(0.1)
-                except KeyboardInterrupt:
-                    if args.verbose:
-                        print("\nStopping playback...", file=sys.stderr)
-                    backend.stop()
-                    return 130
+            try:
+                with TsfBackend(soundfont=soundfont) as backend:
+                    backend.play(sequence)
+                    if not no_wait:
+                        try:
+                            backend.wait()
+                        except KeyboardInterrupt:
+                            if verbose:
+                                print("\nStopping playback...", file=sys.stderr)
+                            backend.stop()
+                            return 130
+            except FileNotFoundError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                return 1
+        else:
+            backend = LibremidiBackend(port_name=port)
+
+            with backend:
+                backend.play(sequence)
+
+                if not no_wait:
+                    try:
+                        while backend.is_playing():
+                            time.sleep(0.1)
+                    except KeyboardInterrupt:
+                        if verbose:
+                            print("\nStopping playback...", file=sys.stderr)
+                        backend.stop()
+                        return 130
 
     except RuntimeError as e:
         print(f"Error: {e}", file=sys.stderr)
-        print("Use --list-ports to see available MIDI ports.", file=sys.stderr)
+        print("Use 'aldakit ports' to see available MIDI ports.", file=sys.stderr)
         return 1
 
     return 0
