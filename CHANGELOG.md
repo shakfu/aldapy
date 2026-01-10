@@ -53,6 +53,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All options moved to their respective subcommands
   - `aldakit` with no args opens the REPL
 
+- **Configuration file support** (`~/.aldakit/config.ini`)
+  - INI-format config files using Python's built-in `configparser` (zero dependencies)
+  - User config: `~/.aldakit/config.ini`
+  - Project-local config: `./aldakit.ini` (overrides user config)
+  - Supported options: `soundfont`, `backend`, `port`, `tempo`, `verbose`
+  - Environment variable `ALDAKIT_SOUNDFONT` overrides config files
+  - CLI arguments always take highest priority
+  - Smart fallback: MIDI is preferred by default; audio is used only if explicitly requested (`-sf` or `backend=audio`) or as fallback when no MIDI ports are available
+
 ### Fixed
 
 - **Windows build failure in `_tsf.cpp`** - Added `#define NOMINMAX` to prevent Windows SDK `min`/`max` macro conflicts with `std::min`/`std::max`

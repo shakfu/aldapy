@@ -608,6 +608,68 @@ aldakit transcribe --play
 aldakit transcribe -d 20 -t 90 -i guitar --feel triplet --play
 ```
 
+## Configuration File
+
+aldakit supports INI-format configuration files to set default values for common options. Configuration is loaded from these locations (in priority order):
+
+1. `./aldakit.ini` - Project-local config (current working directory)
+2. `~/.aldakit/config.ini` - User config (home directory)
+3. `ALDAKIT_SOUNDFONT` environment variable (for soundfont only)
+
+CLI arguments always override config file settings.
+
+### Example Configuration
+
+Create `~/.aldakit/config.ini`:
+
+```ini
+[aldakit]
+# Default SoundFont for audio backend
+soundfont = ~/Music/sf2/FluidR3_GM.sf2
+
+# Default backend: "midi" or "audio"
+backend = midi
+
+# Default MIDI output port (name or index)
+port = FluidSynth
+
+# Default tempo for REPL (BPM)
+tempo = 120
+
+# Enable verbose output by default
+verbose = false
+```
+
+### Available Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `soundfont` | path | none | SoundFont path (used as fallback when no MIDI ports available) |
+| `backend` | string | `midi` | Default backend: `midi` or `audio` |
+| `port` | string | none | Default MIDI output port name |
+| `tempo` | integer | `120` | Default tempo for REPL (BPM) |
+| `verbose` | boolean | `false` | Enable verbose output |
+
+### Backend Selection Priority
+
+1. CLI `-sf /path/to/soundfont.sf2` forces audio backend
+2. Config `backend = audio` forces audio backend
+3. If MIDI ports are available, use MIDI (default)
+4. If no MIDI ports available and `soundfont` is configured, fall back to audio
+5. If no MIDI ports and no soundfont configured, show error
+
+### Project-Local Configuration
+
+Create `aldakit.ini` in your project directory to override user settings:
+
+```ini
+[aldakit]
+# Use audio backend with project-specific SoundFont
+backend = audio
+soundfont = ./sounds/project-soundfont.sf2
+tempo = 140
+```
+
 ## Interactive REPL
 
 The REPL provides an interactive environment for composing and playing Alda code:

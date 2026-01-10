@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 from . import __version__, generate_midi, parse
+from .config import load_config
 from .errors import AldaParseError
 from .midi import LibremidiBackend
 
@@ -520,21 +521,35 @@ def main(argv: list[str] | None = None) -> int:
     parser = create_parser()
     args = parser.parse_args(argv)
 
+    # Load configuration from files
+    config = load_config()
+
     # Handle subcommands
     if args.command == "repl":
         from .repl import run_repl
 
-        port, ok = _resolve_output_port(args.port)
+        # CLI args override config, config overrides defaults
+        port_arg = args.port if args.port else config.port
+        port, ok = _resolve_output_port(port_arg)
         if not ok:
             return 1
         concurrent = not getattr(args, "sequential", False)
-        soundfont = getattr(args, "soundfont", None)
+        verbose = args.verbose or config.verbose
+
+        # CLI -sf explicitly forces audio mode
+        cli_soundfont = getattr(args, "soundfont", None)
+        # Audio mode if: CLI -sf passed, or config.backend="audio"
+        use_audio = cli_soundfont is not None or config.backend == "audio"
+        # Soundfont: CLI overrides config (config.soundfont is fallback)
+        soundfont = cli_soundfont or config.soundfont
+
         return run_repl(
             port,
-            args.verbose,
+            verbose,
             concurrent=concurrent,
-            use_audio=soundfont is not None,
+            use_audio=use_audio,
             soundfont=soundfont,
+            default_tempo=config.tempo,
         )
 
     if args.command == "ports":
@@ -556,14 +571,16 @@ def main(argv: list[str] | None = None) -> int:
         # Fall through to play handling
 
     # Handle play/eval subcommand or default behavior
-    # Get optional attributes with defaults
+    # Get optional attributes with defaults, using config as fallback
     stdin_mode_flag = getattr(args, "stdin", False)
-    port_arg = getattr(args, "port", None)
+    port_arg = getattr(args, "port", None) or config.port
     parse_only = getattr(args, "parse_only", False)
     no_wait = getattr(args, "no_wait", False)
     output = getattr(args, "output", None)
-    soundfont = getattr(args, "soundfont", None)
-    verbose = getattr(args, "verbose", False)
+    verbose = getattr(args, "verbose", False) or config.verbose
+
+    # CLI -sf explicitly passed forces audio mode
+    cli_soundfont = getattr(args, "soundfont", None)
 
     # Resolve port specifier (can be index like "0" or name)
     port, ok = _resolve_output_port(port_arg)
@@ -574,7 +591,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.command is None:
         from .repl import run_repl
 
-        return run_repl(port, verbose, concurrent=True)
+        # Audio mode if: CLI -sf passed, or config.backend="audio"
+        use_audio = cli_soundfont is not None or config.backend == "audio"
+        # Soundfont: CLI overrides config
+        soundfont = cli_soundfont or config.soundfont
+        return run_repl(
+            port,
+            verbose,
+            concurrent=True,
+            use_audio=use_audio,
+            soundfont=soundfont,
+            default_tempo=config.tempo,
+        )
 
     # Handle --stdin (play subcommand only)
     if stdin_mode_flag:
@@ -637,22 +665,30 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Saved to {output}")
         return 0
 
-    # Determine backend: --soundfont implies audio
-    use_audio = soundfont is not None
+    # Determine backend:
+    # - CLI -sf explicitly forces audio mode
+    # - config.backend="audio" forces audio mode
+    # - config.soundfont is just a fallback path when audio is needed
+    use_audio = cli_soundfont is not None or config.backend == "audio"
+    soundfont = cli_soundfont or config.soundfont
 
     if not use_audio and port is None:
         # Check if any MIDI output ports are available
         ports = LibremidiBackend().list_output_ports()
         if not ports:
-            print(
-                "No MIDI output ports available.",
-                file=sys.stderr,
-            )
-            print(
-                "Use -sf /path/to/soundfont.sf2 for TinySoundFont audio backend.",
-                file=sys.stderr,
-            )
-            return 1
+            # No MIDI ports - fall back to audio if soundfont is configured
+            if soundfont:
+                use_audio = True
+            else:
+                print(
+                    "No MIDI output ports available.",
+                    file=sys.stderr,
+                )
+                print(
+                    "Use -sf /path/to/soundfont.sf2 for TinySoundFont audio backend.",
+                    file=sys.stderr,
+                )
+                return 1
 
     # Play
     if verbose:

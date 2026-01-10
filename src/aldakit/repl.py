@@ -219,6 +219,7 @@ def run_repl(
     concurrent: bool = True,
     use_audio: bool = False,
     soundfont: str | None = None,
+    default_tempo: int = 120,
 ) -> int:
     """Run the interactive alda REPL.
 
@@ -229,15 +230,20 @@ def run_repl(
             where multiple inputs layer on top of each other.
         use_audio: If True, use TinySoundFont audio backend instead of MIDI.
         soundfont: Path to SoundFont file (for audio backend).
+        default_tempo: Default tempo in BPM (default: 120).
     """
     # Check for MIDI ports if not using audio
     if not use_audio and port_name is None:
         test_backend = LibremidiBackend()
         ports = test_backend.list_output_ports()
         if not ports:
-            print("No MIDI output ports available.")
-            print("Use -sf /path/to/soundfont.sf2 for TinySoundFont audio backend.")
-            return 1
+            # No MIDI ports - fall back to audio if soundfont is configured
+            if soundfont:
+                use_audio = True
+            else:
+                print("No MIDI output ports available.")
+                print("Use -sf /path/to/soundfont.sf2 for TinySoundFont audio backend.")
+                return 1
 
     if use_audio:
         from .midi.backends import TsfBackend, HAS_TSF
@@ -273,8 +279,7 @@ def run_repl(
         prompt_continuation=lambda width, line_number, is_soft_wrap: "  ... ",
     )
 
-    # State
-    default_tempo = 120
+    # State (default_tempo passed as parameter)
 
     if supports_concurrent:
         mode_str = "concurrent" if backend.concurrent_mode else "sequential"
