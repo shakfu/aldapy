@@ -41,6 +41,7 @@ class TokenType(Enum):
     # S-expression tokens (lisp mode)
     LEFT_PAREN = auto()  # (
     RIGHT_PAREN = auto()  # )
+    QUOTE = auto()  # ' for quoted expressions
     SYMBOL = auto()  # lisp symbol
     NUMBER = auto()  # numeric literal in lisp context
     STRING = auto()  # string literal in lisp context

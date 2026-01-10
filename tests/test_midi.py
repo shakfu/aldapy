@@ -366,3 +366,239 @@ class TestTempoMap:
         assert tempo_map.seconds_to_ticks(1.0) == 960
         assert tempo_map.seconds_to_ticks(2.0) == 1440
         assert tempo_map.seconds_to_ticks(3.0) == 3360
+
+
+class TestKeySignature:
+    """Test key signature application."""
+
+    def test_no_key_signature(self):
+        """Without key signature, notes are natural."""
+        ast = parse("piano: c d e f g a b")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        assert pitches == [60, 62, 64, 65, 67, 69, 71]  # C D E F G A B natural
+
+    def test_g_major_key_signature_string_format(self):
+        """G major: F#. String format "f+"."""
+        ast = parse('piano: (key-sig "f+") c d e f g a b')
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # F should be sharp
+        assert pitches == [60, 62, 64, 66, 67, 69, 71]  # C D E F# G A B
+
+    def test_g_major_key_signature_quoted_list(self):
+        """G major via quoted list format '(g major)'."""
+        ast = parse("piano: (key-sig '(g major)) c d e f g a b")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # F should be sharp
+        assert pitches == [60, 62, 64, 66, 67, 69, 71]  # C D E F# G A B
+
+    def test_d_major_key_signature(self):
+        """D major: F#, C#."""
+        ast = parse("piano: (key-sig '(d major)) c d e f g a b")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # F and C should be sharp
+        assert pitches == [61, 62, 64, 66, 67, 69, 71]  # C# D E F# G A B
+
+    def test_f_major_key_signature(self):
+        """F major: Bb."""
+        ast = parse("piano: (key-sig '(f major)) c d e f g a b")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # B should be flat
+        assert pitches == [60, 62, 64, 65, 67, 69, 70]  # C D E F G A Bb
+
+    def test_g_minor_key_signature(self):
+        """G minor: Bb, Eb."""
+        ast = parse("piano: (key-sig '(g minor)) c d e f g a b")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # B and E should be flat
+        assert pitches == [60, 62, 63, 65, 67, 69, 70]  # C D Eb F G A Bb
+
+    def test_a_minor_key_signature(self):
+        """A minor: no accidentals (like C major)."""
+        ast = parse("piano: (key-sig '(a minor)) c d e f g a b")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # All natural
+        assert pitches == [60, 62, 64, 65, 67, 69, 71]  # C D E F G A B
+
+    def test_natural_overrides_key_signature(self):
+        """Explicit natural cancels key signature."""
+        ast = parse("piano: (key-sig '(g major)) f f_")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # First F is sharp from key sig, second F is natural from explicit _
+        assert pitches == [66, 65]  # F#, F
+
+    def test_explicit_accidental_overrides_key_signature(self):
+        """Explicit accidental on note overrides key signature."""
+        ast = parse("piano: (key-sig '(g major)) f f-")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # First F is sharp from key sig, second F is flat from explicit -
+        assert pitches == [66, 64]  # F#, Fb
+
+    def test_key_signature_with_mode_ionian(self):
+        """Ionian mode (same as major)."""
+        ast = parse("piano: (key-sig '(c ionian)) c d e f g a b")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # C ionian = C major = no accidentals
+        assert pitches == [60, 62, 64, 65, 67, 69, 71]
+
+    def test_key_signature_with_mode_dorian(self):
+        """D dorian has same notes as C major."""
+        ast = parse("piano: (key-sig '(d dorian)) c d e f g a b")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # D dorian has same accidentals as C major
+        assert pitches == [60, 62, 64, 65, 67, 69, 71]
+
+    def test_key_signature_explicit_accidentals_format(self):
+        """Explicit accidentals format: '(b (flat) e (flat))'."""
+        ast = parse("piano: (key-sig '(b (flat) e (flat))) c d e f g a b")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # B and E should be flat
+        assert pitches == [60, 62, 63, 65, 67, 69, 70]  # C D Eb F G A Bb
+
+    def test_key_signature_per_part(self):
+        """Each part can have its own key signature."""
+        ast = parse("""
+            piano: (key-sig '(g major)) f
+            violin: (key-sig '(f major)) b
+        """)
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # Piano F is sharp (G major), violin B is flat (F major)
+        assert 66 in pitches  # F#
+        assert 70 in pitches  # Bb
+
+    def test_key_signature_string_multiple_accidentals(self):
+        """Multiple accidentals in string format."""
+        ast = parse('piano: (key-sig "f+ c+ g+") c d e f g a b')
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # A major: C#, F#, G#
+        assert pitches == [61, 62, 64, 66, 68, 69, 71]  # C# D E F# G# A B
+
+    def test_key_signature_c_major_no_effect(self):
+        """C major has no accidentals."""
+        ast = parse("piano: (key-sig '(c major)) c d e f g a b")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # All natural
+        assert pitches == [60, 62, 64, 65, 67, 69, 71]
+
+
+class TestTranspose:
+    """Test transposition functionality."""
+
+    def test_no_transpose(self):
+        """Without transpose, notes play at normal pitch."""
+        ast = parse("piano: c d e")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        assert pitches == [60, 62, 64]  # C4 D4 E4
+
+    def test_transpose_up_5(self):
+        """Transpose up 5 semitones (perfect fourth)."""
+        ast = parse("piano: (transpose 5) c d e")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # C D E transposed up 5 -> F G A
+        assert pitches == [65, 67, 69]
+
+    def test_transpose_up_12(self):
+        """Transpose up 12 semitones (one octave)."""
+        ast = parse("piano: (transpose 12) c d e")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # C4 D4 E4 -> C5 D5 E5
+        assert pitches == [72, 74, 76]
+
+    def test_transpose_down(self):
+        """Transpose down (negative semitones)."""
+        ast = parse("piano: (transpose -5) c d e")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # C D E transposed down 5 -> G3 A3 B3
+        assert pitches == [55, 57, 59]
+
+    def test_transpose_reset(self):
+        """Transpose 0 resets transposition."""
+        ast = parse("piano: (transpose 5) c d (transpose 0) e f")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # C D transposed +5, then E F with no transpose
+        assert pitches == [65, 67, 64, 65]  # F G E F
+
+    def test_transpose_change_mid_score(self):
+        """Transpose can change during the score."""
+        ast = parse("piano: c (transpose 5) d (transpose 7) e")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # C normal, D +5, E +7
+        assert pitches == [60, 67, 71]  # C4, G4, B4
+
+    def test_transpose_with_accidentals(self):
+        """Transpose applies after accidentals."""
+        ast = parse("piano: (transpose 5) c c+ c-")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # C, C#, Cb all transposed up 5
+        assert pitches == [65, 66, 64]  # F, F#, E
+
+    def test_transpose_with_key_signature(self):
+        """Transpose applies after key signature."""
+        ast = parse("piano: (key-sig '(g major)) (transpose 5) c d e f")
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # G major has F#, then transpose up 5
+        # C D E F# -> (60 62 64 66) + 5 -> 65 67 69 71
+        assert pitches == [65, 67, 69, 71]
+
+    def test_transpose_per_part(self):
+        """Each part can have its own transposition."""
+        ast = parse("""
+            piano: (transpose 5) c
+            violin: (transpose -5) c
+        """)
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # Piano C +5 = 65, Violin C -5 = 55
+        assert 65 in pitches  # F
+        assert 55 in pitches  # G3
+
+    def test_transpose_clamps_to_valid_range(self):
+        """Transpose clamps MIDI notes to 0-127."""
+        ast = parse(
+            "piano: o8 (transpose 20) c"
+        )  # C8 = 108, +20 = 128 -> clamped to 127
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        assert pitches == [127]
+
+    def test_transpose_clamps_low(self):
+        """Transpose clamps low notes to 0."""
+        ast = parse("piano: o1 (transpose -30) c")  # C1 = 24, -30 = -6 -> clamped to 0
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        assert pitches == [0]
+
+    def test_transpose_in_variable(self):
+        """Transpose affects variable playback."""
+        ast = parse("""
+            motif = c d e
+            piano:
+                motif
+                (transpose 5) motif
+        """)
+        seq = generate_midi(ast)
+        pitches = [n.pitch for n in seq.notes]
+        # First motif: C D E, second motif: F G A
+        assert pitches == [60, 62, 64, 65, 67, 69]

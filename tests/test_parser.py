@@ -17,6 +17,7 @@ from aldakit.ast_nodes import (
     OctaveUpNode,
     OctaveDownNode,
     LispListNode,
+    LispQuotedNode,
     LispSymbolNode,
     LispNumberNode,
     VariableDefinitionNode,
@@ -239,6 +240,41 @@ class TestSExpressions:
         seq = ast.children[0]
         assert isinstance(seq.events[0], LispListNode)
         assert isinstance(seq.events[1], NoteNode)
+
+    def test_quoted_list(self):
+        """Test parsing of quoted list syntax '(...)."""
+        ast = parse("(key-sig '(g minor))")
+        sexp = ast.children[0].events[0]
+        assert isinstance(sexp, LispListNode)
+        assert len(sexp.elements) == 2
+        assert isinstance(sexp.elements[0], LispSymbolNode)
+        assert sexp.elements[0].name == "key-sig"
+        # Second element is the quoted list
+        assert isinstance(sexp.elements[1], LispQuotedNode)
+        quoted = sexp.elements[1]
+        assert isinstance(quoted.value, LispListNode)
+        assert len(quoted.value.elements) == 2
+        assert quoted.value.elements[0].name == "g"
+        assert quoted.value.elements[1].name == "minor"
+
+    def test_quoted_list_with_multiple_elements(self):
+        """Test quoted list with multiple symbols."""
+        ast = parse("(key-signature '(a flat major))")
+        sexp = ast.children[0].events[0]
+        quoted = sexp.elements[1]
+        assert isinstance(quoted, LispQuotedNode)
+        assert len(quoted.value.elements) == 3
+        assert quoted.value.elements[0].name == "a"
+        assert quoted.value.elements[1].name == "flat"
+        assert quoted.value.elements[2].name == "major"
+
+    def test_quoted_list_in_part(self):
+        """Test quoted list in part context."""
+        ast = parse("piano: (key-sig '(c major)) c d e")
+        part = ast.children[0]
+        sexp = part.events.events[0]
+        assert isinstance(sexp, LispListNode)
+        assert isinstance(sexp.elements[1], LispQuotedNode)
 
 
 class TestComplexExamples:

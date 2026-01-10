@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Key signature support** (`key-sig`, `key-signature`) - Full implementation in MIDI generator
+  - String format: `(key-sig "f+ c+ g+")` for explicit accidentals
+  - Quoted list format: `(key-sig '(g major))`, `(key-sig '(d minor))`
+  - Modal key signatures: `(key-sig '(d dorian))`, `(key-sig '(e phrygian))`
+  - Explicit accidentals: `(key-sig '(b (flat) e (flat)))`
+  - Natural sign (`_`) overrides key signature on individual notes
+  - Per-part and global (`key-sig!`) variants
+
+- **Transposition support** (`transpose`) - Full implementation in MIDI generator
+  - Semitone-based transposition: `(transpose 5)` for up a fourth, `(transpose -7)` for down a fifth
+  - Useful for transposing instruments: `clarinet: (transpose -2)` for Bb clarinet
+  - Resets with `(transpose 0)`
+  - Per-part and global (`transpose!`) variants
+  - Correctly clamps to valid MIDI range (0-127)
+
+- **Quoted list syntax** in S-expressions (`'(...)`) - Lisp-style quoted lists now fully parsed
+
 ### Fixed
 
 - **Windows build failure in `_tsf.cpp`** - Added `#define NOMINMAX` to prevent Windows SDK `min`/`max` macro conflicts with `std::min`/`std::max`

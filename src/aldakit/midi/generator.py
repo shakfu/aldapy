@@ -13,6 +13,8 @@ from ..ast_nodes import (
     EventSequenceNode,
     LispListNode,
     LispNumberNode,
+    LispQuotedNode,
+    LispStringNode,
     LispSymbolNode,
     MarkerNode,
     NoteLengthMsNode,
@@ -41,6 +43,83 @@ from ..midi.types import (
 )
 
 
+# Key signature definitions: maps key name to dict of {note: accidental}
+# Accidentals: "+" for sharp, "-" for flat
+KEY_SIGNATURES: dict[str, dict[str, str]] = {
+    # Major keys (sharp side)
+    "c major": {},
+    "g major": {"f": "+"},
+    "d major": {"f": "+", "c": "+"},
+    "a major": {"f": "+", "c": "+", "g": "+"},
+    "e major": {"f": "+", "c": "+", "g": "+", "d": "+"},
+    "b major": {"f": "+", "c": "+", "g": "+", "d": "+", "a": "+"},
+    "f# major": {"f": "+", "c": "+", "g": "+", "d": "+", "a": "+", "e": "+"},
+    "f+ major": {"f": "+", "c": "+", "g": "+", "d": "+", "a": "+", "e": "+"},
+    "c# major": {"f": "+", "c": "+", "g": "+", "d": "+", "a": "+", "e": "+", "b": "+"},
+    "c+ major": {"f": "+", "c": "+", "g": "+", "d": "+", "a": "+", "e": "+", "b": "+"},
+    # Major keys (flat side)
+    "f major": {"b": "-"},
+    "bb major": {"b": "-", "e": "-"},
+    "b- major": {"b": "-", "e": "-"},
+    "eb major": {"b": "-", "e": "-", "a": "-"},
+    "e- major": {"b": "-", "e": "-", "a": "-"},
+    "ab major": {"b": "-", "e": "-", "a": "-", "d": "-"},
+    "a- major": {"b": "-", "e": "-", "a": "-", "d": "-"},
+    "db major": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-"},
+    "d- major": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-"},
+    "gb major": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-", "c": "-"},
+    "g- major": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-", "c": "-"},
+    "cb major": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-", "c": "-", "f": "-"},
+    "c- major": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-", "c": "-", "f": "-"},
+    # Minor keys (sharp side) - relative to major
+    "a minor": {},
+    "e minor": {"f": "+"},
+    "b minor": {"f": "+", "c": "+"},
+    "f# minor": {"f": "+", "c": "+", "g": "+"},
+    "f+ minor": {"f": "+", "c": "+", "g": "+"},
+    "c# minor": {"f": "+", "c": "+", "g": "+", "d": "+"},
+    "c+ minor": {"f": "+", "c": "+", "g": "+", "d": "+"},
+    "g# minor": {"f": "+", "c": "+", "g": "+", "d": "+", "a": "+"},
+    "g+ minor": {"f": "+", "c": "+", "g": "+", "d": "+", "a": "+"},
+    "d# minor": {"f": "+", "c": "+", "g": "+", "d": "+", "a": "+", "e": "+"},
+    "d+ minor": {"f": "+", "c": "+", "g": "+", "d": "+", "a": "+", "e": "+"},
+    "a# minor": {"f": "+", "c": "+", "g": "+", "d": "+", "a": "+", "e": "+", "b": "+"},
+    "a+ minor": {"f": "+", "c": "+", "g": "+", "d": "+", "a": "+", "e": "+", "b": "+"},
+    # Minor keys (flat side)
+    "d minor": {"b": "-"},
+    "g minor": {"b": "-", "e": "-"},
+    "c minor": {"b": "-", "e": "-", "a": "-"},
+    "f minor": {"b": "-", "e": "-", "a": "-", "d": "-"},
+    "bb minor": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-"},
+    "b- minor": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-"},
+    "eb minor": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-", "c": "-"},
+    "e- minor": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-", "c": "-"},
+    "ab minor": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-", "c": "-", "f": "-"},
+    "a- minor": {"b": "-", "e": "-", "a": "-", "d": "-", "g": "-", "c": "-", "f": "-"},
+    # Modes (based on C major)
+    "c ionian": {},
+    "d dorian": {},
+    "e phrygian": {},
+    "f lydian": {},
+    "g mixolydian": {},
+    "a aeolian": {},
+    "b locrian": {},
+    # Modes on other roots would need calculation, but these are the common ones
+    # For modes, the key signature is determined by the parent major scale
+}
+
+# Mode intervals relative to major (for calculating modes on any root)
+MODE_INTERVALS: dict[str, int] = {
+    "ionian": 0,  # Same as major
+    "dorian": 2,  # 2nd degree of major
+    "phrygian": 4,  # 3rd degree
+    "lydian": 5,  # 4th degree
+    "mixolydian": 7,  # 5th degree
+    "aeolian": 9,  # 6th degree (natural minor)
+    "locrian": 11,  # 7th degree
+}
+
+
 @dataclass
 class PartState:
     """State for a single part/instrument."""
@@ -53,6 +132,8 @@ class PartState:
     current_time: float = 0.0  # Current time in seconds
     channel: int = 0
     program: int = 0
+    key_signature: dict[str, str] = field(default_factory=dict)  # note -> accidental
+    transpose: int = 0  # Transposition in semitones
 
 
 @dataclass
@@ -216,8 +297,23 @@ class MidiGenerator:
         """
         part = self._get_part_state()
 
+        # Determine accidentals: use explicit accidentals, or key signature, or none
+        accidentals = node.accidentals
+        if not accidentals:
+            # No explicit accidentals - check key signature
+            letter = node.letter.lower()
+            if letter in part.key_signature:
+                accidentals = [part.key_signature[letter]]
+        elif "_" in accidentals:
+            # Natural sign explicitly cancels key signature
+            accidentals = []
+
         # Calculate MIDI note number
-        midi_note = note_to_midi(node.letter, part.octave, node.accidentals)
+        midi_note = note_to_midi(node.letter, part.octave, accidentals)
+
+        # Apply transposition
+        if part.transpose != 0:
+            midi_note = max(0, min(127, midi_note + part.transpose))
 
         # Calculate duration
         duration_beats = self._calculate_duration(node.duration, part)
@@ -382,6 +478,185 @@ class MidiGenerator:
                 "ffffff": 127,
             }
             part.volume = dynamics.get(func_name, 80)
+
+        elif func_name in ("key-sig", "key-signature", "key-sig!", "key-signature!"):
+            # Set key signature
+            key_sig = self._parse_key_signature(args)
+            if key_sig is not None:
+                if func_name.endswith("!"):
+                    # Global key signature
+                    for p in self.state.parts.values():
+                        p.key_signature = key_sig.copy()
+                else:
+                    part.key_signature = key_sig
+
+        elif func_name in ("transpose", "transpose!"):
+            # Set transposition in semitones
+            if args and isinstance(args[0], LispNumberNode):
+                semitones = int(args[0].value)
+                if func_name.endswith("!"):
+                    # Global transpose
+                    for p in self.state.parts.values():
+                        p.transpose = semitones
+                else:
+                    part.transpose = semitones
+
+    def _parse_key_signature(self, args: list) -> dict[str, str] | None:
+        """Parse key signature from S-expression arguments.
+
+        Supports formats:
+        - String: "f+ c+ g+" (explicit accidentals)
+        - Quoted list: '(g minor), '(c ionian), '(e (flat) b (flat))
+        """
+        if not args:
+            return None
+
+        arg = args[0]
+
+        # String format: "f+ c+ g+"
+        if isinstance(arg, LispStringNode):
+            return self._parse_key_sig_string(arg.value)
+
+        # Quoted list format: '(g minor)
+        if isinstance(arg, LispQuotedNode):
+            return self._parse_key_sig_quoted(arg.value)
+
+        return None
+
+    def _parse_key_sig_string(self, s: str) -> dict[str, str]:
+        """Parse key signature from string format like 'f+ c+ g+'."""
+        key_sig: dict[str, str] = {}
+        tokens = s.lower().split()
+
+        for token in tokens:
+            if not token:
+                continue
+            note = token[0]
+            if note in "abcdefg":
+                accidentals = token[1:]
+                if "+" in accidentals or "#" in accidentals:
+                    key_sig[note] = "+"
+                elif "-" in accidentals or "b" in accidentals:
+                    key_sig[note] = "-"
+
+        return key_sig
+
+    def _parse_key_sig_quoted(self, node: LispListNode) -> dict[str, str] | None:
+        """Parse key signature from quoted list format.
+
+        Formats:
+        - (g minor) - key name
+        - (c ionian) - mode
+        - (e (flat) b (flat)) - explicit accidentals
+        """
+        if not node.elements:
+            return None
+
+        # Extract symbols from the list
+        symbols = []
+        i = 0
+        while i < len(node.elements):
+            elem = node.elements[i]
+            if isinstance(elem, LispSymbolNode):
+                symbols.append(elem.name.lower())
+            elif isinstance(elem, LispListNode):
+                # Nested list like (flat) or (sharp)
+                if elem.elements and isinstance(elem.elements[0], LispSymbolNode):
+                    symbols.append(elem.elements[0].name.lower())
+            i += 1
+
+        if not symbols:
+            return None
+
+        # Check for explicit accidentals format: e flat b flat
+        if len(symbols) >= 2 and symbols[1] in ("flat", "sharp"):
+            return self._parse_explicit_accidentals(symbols)
+
+        # Check for key name: g minor, d major, c ionian
+        if len(symbols) >= 2:
+            key_name = " ".join(symbols)
+            if key_name in KEY_SIGNATURES:
+                return KEY_SIGNATURES[key_name].copy()
+
+            # Try with root + mode/quality
+            root = symbols[0]
+            quality = symbols[1]
+
+            # Handle modes on any root
+            if quality in MODE_INTERVALS:
+                return self._calculate_mode_key_sig(root, quality)
+
+        return None
+
+    def _parse_explicit_accidentals(self, symbols: list[str]) -> dict[str, str]:
+        """Parse explicit accidentals like: e flat b flat."""
+        key_sig: dict[str, str] = {}
+        i = 0
+        while i < len(symbols):
+            if symbols[i] in "abcdefg" and i + 1 < len(symbols):
+                note = symbols[i]
+                acc = symbols[i + 1]
+                if acc == "flat":
+                    key_sig[note] = "-"
+                    i += 2
+                elif acc == "sharp":
+                    key_sig[note] = "+"
+                    i += 2
+                else:
+                    i += 1
+            else:
+                i += 1
+        return key_sig
+
+    def _calculate_mode_key_sig(self, root: str, mode: str) -> dict[str, str] | None:
+        """Calculate key signature for a mode on any root.
+
+        For example, D dorian uses the same notes as C major.
+        """
+        if mode not in MODE_INTERVALS:
+            return None
+
+        # Note to semitone mapping
+        note_semitones = {"c": 0, "d": 2, "e": 4, "f": 5, "g": 7, "a": 9, "b": 11}
+
+        # Handle accidentals in root
+        root_note = root[0] if root else ""
+        if root_note not in note_semitones:
+            return None
+
+        root_semitone = note_semitones[root_note]
+        if len(root) > 1:
+            if root[1] in "#+":
+                root_semitone += 1
+            elif root[1] in "-b":
+                root_semitone -= 1
+        root_semitone = root_semitone % 12
+
+        # Calculate the parent major scale
+        mode_offset = MODE_INTERVALS[mode]
+        parent_semitone = (root_semitone - mode_offset) % 12
+
+        # Find the parent major key
+        semitone_to_major = {
+            0: "c major",
+            1: "db major",
+            2: "d major",
+            3: "eb major",
+            4: "e major",
+            5: "f major",
+            6: "gb major",
+            7: "g major",
+            8: "ab major",
+            9: "a major",
+            10: "bb major",
+            11: "b major",
+        }
+
+        parent_major = semitone_to_major.get(parent_semitone)
+        if parent_major and parent_major in KEY_SIGNATURES:
+            return KEY_SIGNATURES[parent_major].copy()
+
+        return None
 
     def _process_variable_definition(self, node: VariableDefinitionNode) -> None:
         """Process a variable definition (store only, don't emit sound)."""

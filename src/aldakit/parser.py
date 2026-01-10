@@ -13,6 +13,7 @@ from .ast_nodes import (
     EventSequenceNode,
     LispListNode,
     LispNumberNode,
+    LispQuotedNode,
     LispStringNode,
     LispSymbolNode,
     MarkerNode,
@@ -576,6 +577,14 @@ class Parser:
         if self._match(TokenType.STRING):
             token = self.tokens[self._current - 1]
             return LispStringNode(value=token.literal, position=token.position)
+
+        if self._match(TokenType.QUOTE):
+            # Quoted expression: '(...)
+            quote_token = self.tokens[self._current - 1]
+            if not self._check(TokenType.LEFT_PAREN):
+                self._error("Expected '(' after quote")
+            quoted_list = self._parse_sexp()
+            return LispQuotedNode(value=quoted_list, position=quote_token.position)
 
         if self._check(TokenType.LEFT_PAREN):
             return self._parse_sexp()

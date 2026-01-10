@@ -155,6 +155,9 @@ class Scanner:
         elif c == ")":
             self._sexp_depth -= 1
             self._add_token(TokenType.RIGHT_PAREN)
+        elif c == "'":
+            # Quote character for quoted expressions like '(g minor)
+            self._add_token(TokenType.QUOTE)
         elif c == '"':
             self._scan_string()
         elif c == "-" and self._peek().isdigit():

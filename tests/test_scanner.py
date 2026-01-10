@@ -171,6 +171,30 @@ class TestSExpressions:
         num_token = [t for t in tokens if t.type == TokenType.NUMBER][0]
         assert num_token.literal == -50
 
+    def test_sexp_with_quoted_list(self):
+        """Test quoted list syntax '(...) inside S-expressions."""
+        scanner = Scanner("(key-sig '(g minor))")
+        tokens = scanner.scan()
+        types = [t.type for t in tokens if t.type != TokenType.EOF]
+        assert types == [
+            TokenType.LEFT_PAREN,
+            TokenType.SYMBOL,
+            TokenType.QUOTE,
+            TokenType.LEFT_PAREN,
+            TokenType.SYMBOL,
+            TokenType.SYMBOL,
+            TokenType.RIGHT_PAREN,
+            TokenType.RIGHT_PAREN,
+        ]
+
+    def test_sexp_quote_token(self):
+        """Test that quote token is correctly generated."""
+        scanner = Scanner("(test '(a b c))")
+        tokens = scanner.scan()
+        quote_tokens = [t for t in tokens if t.type == TokenType.QUOTE]
+        assert len(quote_tokens) == 1
+        assert quote_tokens[0].lexeme == "'"
+
 
 class TestComments:
     """Test comment handling."""

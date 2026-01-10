@@ -378,6 +378,20 @@ class LispStringNode(LispNode):
         return f'"{self.value}"'
 
 
+@dataclass
+class LispQuotedNode(LispNode):
+    """A quoted Lisp expression (e.g., '(g minor))."""
+
+    value: "LispListNode"
+    position: SourcePosition | None = None
+
+    def accept(self, visitor: ASTVisitor) -> object:
+        return visitor.visit(self)
+
+    def _repr_helper(self, indent: int) -> str:
+        return f"'{self.value._repr_helper(indent)}"
+
+
 # Variable nodes
 
 

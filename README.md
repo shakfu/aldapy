@@ -600,6 +600,15 @@ violin/viola/cello "strings":   # Multi-instrument
 
 # Dynamic markings
 (pp) (p) (mp) (mf) (f) (ff)
+
+# Key signatures
+(key-sig '(g major))     # G major (F#)
+(key-sig '(d minor))     # D minor (Bb)
+(key-sig "f+ c+")        # Explicit accidentals
+
+# Transposition
+(transpose 5)   # Up 5 semitones
+(transpose -2)  # Down 2 semitones (Bb instrument)
 ```
 
 ### Variables
