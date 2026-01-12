@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9]
+
+### Added
+
+- **`--audio` / `-a` flag** for `play`, `eval`, and `repl` subcommands
+  - Explicitly selects the built-in TinySoundFont audio backend
+  - Uses pre-configured soundfont from config file (`~/.aldakit/config.ini`) or `ALDAKIT_SOUNDFONT` environment variable
+  - Avoids need to specify `-sf /path/to/soundfont.sf2` each time
+  - Example: `aldakit play -a examples/twinkle.alda`
+
+- **`--virtual-port` / `-vp` flag** for `play`, `eval`, and `repl` subcommands
+  - Allows customizing the virtual MIDI port name (default: "AldakitMIDI")
+  - Example: `aldakit repl -vp MyMIDI`
+
+- **Centralized constants** (`src/aldakit/constants.py`)
+  - All default values, magic numbers, and configuration constants now in one place
+  - Includes: `DEFAULT_VIRTUAL_PORT_NAME`, `DEFAULT_TEMPO`, `DEFAULT_BACKEND`, `MAX_PLAYBACK_SLOTS`, MIDI protocol constants, timing intervals
+
+### Fixed
+
+- **Virtual MIDI port creation** now works when no physical MIDI ports are available
+  - Previously, the CLI would error with "No MIDI output ports available" instead of creating a virtual port
+  - Now correctly falls through to let the libremidi backend create the virtual port
+
 ## [0.1.8]
 
 ### Added

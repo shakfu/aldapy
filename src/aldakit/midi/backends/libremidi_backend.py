@@ -1,12 +1,23 @@
 """libremidi-based MIDI backend for realtime playback."""
 
 import threading
-import time
 from pathlib import Path
 
+from ...constants import (
+    DEFAULT_VIRTUAL_PORT_NAME,
+    MIDI_CC_ALL_NOTES_OFF,
+    MIDI_CHANNEL_MASK,
+    MIDI_DATA_MASK,
+    MIDI_MAX_CHANNELS,
+    MIDI_STATUS_CONTROL_CHANGE,
+    MIDI_STATUS_NOTE_OFF,
+    MIDI_STATUS_NOTE_ON,
+    MIDI_STATUS_PROGRAM_CHANGE,
+    POLL_INTERVAL_DEFAULT,
+)
 from ..types import MidiSequence
-from .base import MidiBackend
 from .async_playback import AsyncPlaybackManager
+from .base import MidiBackend
 
 
 class LibremidiBackend(MidiBackend):
@@ -14,7 +25,7 @@ class LibremidiBackend(MidiBackend):
 
     Provides low-latency realtime playback using the native libremidi library.
     Supports concurrent playback mode where multiple sequences can play
-    simultaneously (up to 8 concurrent slots).
+    simultaneously (up to MAX_PLAYBACK_SLOTS concurrent slots).
 
     Example:
         >>> backend = LibremidiBackend()
@@ -24,7 +35,12 @@ class LibremidiBackend(MidiBackend):
         >>> backend.stop()  # Stop all playback
     """
 
-    def __init__(self, port_name: str | None = None, concurrent: bool = True) -> None:
+    def __init__(
+        self,
+        port_name: str | None = None,
+        concurrent: bool = True,
+        virtual_port_name: str = DEFAULT_VIRTUAL_PORT_NAME,
+    ) -> None:
         """Initialize the libremidi backend.
 
         Args:
@@ -32,11 +48,14 @@ class LibremidiBackend(MidiBackend):
                 If None, will use a virtual port or first available port.
             concurrent: If True, enable concurrent playback mode (default).
                 In concurrent mode, multiple sequences can play simultaneously.
+            virtual_port_name: Name for the virtual MIDI port when no physical
+                ports are available. Defaults to DEFAULT_VIRTUAL_PORT_NAME.
         """
         from ... import _libremidi
 
         self._libremidi = _libremidi
         self._port_name = port_name
+        self._virtual_port_name = virtual_port_name
         self._midi_out: _libremidi.MidiOut | None = None
         self._observer: _libremidi.Observer | None = None
         self._port_opened = False
@@ -74,7 +93,7 @@ class LibremidiBackend(MidiBackend):
             self._port_opened = True
         else:
             # Create a virtual port
-            self._midi_out.open_virtual_port("AldakitMIDI")
+            self._midi_out.open_virtual_port(self._virtual_port_name)
             self._port_opened = True
 
     @property
@@ -101,37 +120,41 @@ class LibremidiBackend(MidiBackend):
         if self._midi_out is None:
             return
         with self._midi_lock:
-            status = 0x90 | (channel & 0x0F)
-            self._midi_out.send_message(status, note & 0x7F, velocity & 0x7F)
+            status = MIDI_STATUS_NOTE_ON | (channel & MIDI_CHANNEL_MASK)
+            self._midi_out.send_message(
+                status, note & MIDI_DATA_MASK, velocity & MIDI_DATA_MASK
+            )
 
     def _send_note_off(self, channel: int, note: int) -> None:
         """Send a note off message (thread-safe)."""
         if self._midi_out is None:
             return
         with self._midi_lock:
-            status = 0x80 | (channel & 0x0F)
-            self._midi_out.send_message(status, note & 0x7F, 0)
+            status = MIDI_STATUS_NOTE_OFF | (channel & MIDI_CHANNEL_MASK)
+            self._midi_out.send_message(status, note & MIDI_DATA_MASK, 0)
 
     def _send_program_change(self, channel: int, program: int) -> None:
         """Send a program change message (thread-safe)."""
         if self._midi_out is None:
             return
         with self._midi_lock:
-            status = 0xC0 | (channel & 0x0F)
-            self._midi_out.send_message(status, program & 0x7F)
+            status = MIDI_STATUS_PROGRAM_CHANGE | (channel & MIDI_CHANNEL_MASK)
+            self._midi_out.send_message(status, program & MIDI_DATA_MASK)
 
     def _send_control_change(self, channel: int, control: int, value: int) -> None:
         """Send a control change message (thread-safe)."""
         if self._midi_out is None:
             return
         with self._midi_lock:
-            status = 0xB0 | (channel & 0x0F)
-            self._midi_out.send_message(status, control & 0x7F, value & 0x7F)
+            status = MIDI_STATUS_CONTROL_CHANGE | (channel & MIDI_CHANNEL_MASK)
+            self._midi_out.send_message(
+                status, control & MIDI_DATA_MASK, value & MIDI_DATA_MASK
+            )
 
     def _send_all_notes_off(self) -> None:
         """Send all notes off on all channels (thread-safe)."""
-        for channel in range(16):
-            self._send_control_change(channel, 123, 0)  # All Notes Off
+        for channel in range(MIDI_MAX_CHANNELS):
+            self._send_control_change(channel, MIDI_CC_ALL_NOTES_OFF, 0)
 
     def _ensure_async_manager(self) -> None:
         """Ensure the async playback manager is initialized."""
@@ -149,7 +172,7 @@ class LibremidiBackend(MidiBackend):
         """Play a MIDI sequence in realtime.
 
         In concurrent mode (default), the sequence starts playing immediately
-        alongside any currently playing sequences (up to 8 concurrent).
+        alongside any currently playing sequences (up to MAX_PLAYBACK_SLOTS).
 
         In sequential mode, waits for all current playback to complete first.
 
@@ -190,7 +213,7 @@ class LibremidiBackend(MidiBackend):
             return self._async_manager.is_playing()
         return False
 
-    def wait(self, poll_interval: float = 0.05) -> None:
+    def wait(self, poll_interval: float = POLL_INTERVAL_DEFAULT) -> None:
         """Block until all playback completes.
 
         Args:

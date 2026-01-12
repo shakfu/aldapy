@@ -21,6 +21,7 @@ DURATION_TOLERANCE = 0.001
 @dataclass
 class ExpectedNote:
     """Expected note from .expected file."""
+
     pitch: int
     start: float
     duration: float
@@ -31,6 +32,7 @@ class ExpectedNote:
 @dataclass
 class ExpectedProgram:
     """Expected program change from .expected file."""
+
     program: int
     channel: int
     time: float
@@ -39,6 +41,7 @@ class ExpectedProgram:
 @dataclass
 class ExpectedCC:
     """Expected control change from .expected file."""
+
     control: int
     value: int
     channel: int
@@ -48,6 +51,7 @@ class ExpectedCC:
 @dataclass
 class ExpectedTempo:
     """Expected tempo change from .expected file."""
+
     bpm: float
     time: float
 
@@ -55,6 +59,7 @@ class ExpectedTempo:
 @dataclass
 class ExpectedOutput:
     """Parsed expected output from .expected file."""
+
     notes: list[ExpectedNote]
     programs: list[ExpectedProgram]
     control_changes: list[ExpectedCC]
@@ -77,31 +82,39 @@ def parse_expected_file(path: Path) -> ExpectedOutput:
         record_type = parts[0]
 
         if record_type == "NOTE":
-            notes.append(ExpectedNote(
-                pitch=int(parts[1]),
-                start=float(parts[2]),
-                duration=float(parts[3]),
-                velocity=int(parts[4]),
-                channel=int(parts[5]),
-            ))
+            notes.append(
+                ExpectedNote(
+                    pitch=int(parts[1]),
+                    start=float(parts[2]),
+                    duration=float(parts[3]),
+                    velocity=int(parts[4]),
+                    channel=int(parts[5]),
+                )
+            )
         elif record_type == "PROGRAM":
-            programs.append(ExpectedProgram(
-                program=int(parts[1]),
-                channel=int(parts[2]),
-                time=float(parts[3]),
-            ))
+            programs.append(
+                ExpectedProgram(
+                    program=int(parts[1]),
+                    channel=int(parts[2]),
+                    time=float(parts[3]),
+                )
+            )
         elif record_type == "CC":
-            control_changes.append(ExpectedCC(
-                control=int(parts[1]),
-                value=int(parts[2]),
-                channel=int(parts[3]),
-                time=float(parts[4]),
-            ))
+            control_changes.append(
+                ExpectedCC(
+                    control=int(parts[1]),
+                    value=int(parts[2]),
+                    channel=int(parts[3]),
+                    time=float(parts[4]),
+                )
+            )
         elif record_type == "TEMPO":
-            tempos.append(ExpectedTempo(
-                bpm=float(parts[1]),
-                time=float(parts[2]),
-            ))
+            tempos.append(
+                ExpectedTempo(
+                    bpm=float(parts[1]),
+                    time=float(parts[2]),
+                )
+            )
 
     return ExpectedOutput(notes, programs, control_changes, tempos)
 
@@ -136,8 +149,12 @@ class TestNotesBasic:
 
         for i, (actual, exp) in enumerate(zip(actual_notes, expected_notes)):
             assert actual.pitch == exp.pitch, f"Note {i}: pitch mismatch"
-            assert abs(actual.start_time - exp.start) < TIME_TOLERANCE, f"Note {i}: start mismatch"
-            assert abs(actual.duration - exp.duration) < DURATION_TOLERANCE, f"Note {i}: duration mismatch"
+            assert abs(actual.start_time - exp.start) < TIME_TOLERANCE, (
+                f"Note {i}: start mismatch"
+            )
+            assert abs(actual.duration - exp.duration) < DURATION_TOLERANCE, (
+                f"Note {i}: duration mismatch"
+            )
             assert actual.velocity == exp.velocity, f"Note {i}: velocity mismatch"
             assert actual.channel == exp.channel, f"Note {i}: channel mismatch"
 
@@ -204,8 +221,12 @@ class TestChords:
         seq = parse_and_generate(SUITE_DIR / "06_chords.alda")
 
         # Check simultaneous notes at time 0 (first chord)
-        actual_at_zero = sorted([n.pitch for n in seq.notes if abs(n.start_time) < TIME_TOLERANCE])
-        expected_at_zero = sorted([n.pitch for n in expected.notes if abs(n.start) < TIME_TOLERANCE])
+        actual_at_zero = sorted(
+            [n.pitch for n in seq.notes if abs(n.start_time) < TIME_TOLERANCE]
+        )
+        expected_at_zero = sorted(
+            [n.pitch for n in expected.notes if abs(n.start) < TIME_TOLERANCE]
+        )
 
         assert actual_at_zero == expected_at_zero, (
             f"First chord mismatch: expected {expected_at_zero}, got {actual_at_zero}"
@@ -310,8 +331,12 @@ class TestVoices:
         seq = parse_and_generate(SUITE_DIR / "14_voices.alda")
 
         # Multiple notes should start at time 0
-        actual_at_zero = len([n for n in seq.notes if abs(n.start_time) < TIME_TOLERANCE])
-        expected_at_zero = len([n for n in expected.notes if abs(n.start) < TIME_TOLERANCE])
+        actual_at_zero = len(
+            [n for n in seq.notes if abs(n.start_time) < TIME_TOLERANCE]
+        )
+        expected_at_zero = len(
+            [n for n in expected.notes if abs(n.start) < TIME_TOLERANCE]
+        )
 
         assert actual_at_zero == expected_at_zero
 
@@ -387,8 +412,12 @@ class TestPanning:
         seq = parse_and_generate(SUITE_DIR / "20_panning.alda")
 
         # Check CC#10 (pan) values
-        actual_pan = sorted([cc.value for cc in seq.control_changes if cc.control == 10])
-        expected_pan = sorted([cc.value for cc in expected.control_changes if cc.control == 10])
+        actual_pan = sorted(
+            [cc.value for cc in seq.control_changes if cc.control == 10]
+        )
+        expected_pan = sorted(
+            [cc.value for cc in expected.control_changes if cc.control == 10]
+        )
 
         assert actual_pan == expected_pan
 
@@ -431,4 +460,4 @@ class TestAllFilesValidation:
                     f"{alda_file.name}: expected {len(expected.notes)}, got {len(seq.notes)}"
                 )
 
-        assert not mismatches, f"Note count mismatches:\n" + "\n".join(mismatches)
+        assert not mismatches, "Note count mismatches:\n" + "\n".join(mismatches)

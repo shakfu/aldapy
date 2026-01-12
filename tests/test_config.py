@@ -4,9 +4,14 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 
-from aldakit.config import Config, get_config_paths, load_config, _expand_path, _load_file
+from aldakit.config import (
+    Config,
+    get_config_paths,
+    load_config,
+    _expand_path,
+    _load_file,
+)
 
 
 class TestConfig:
@@ -265,6 +270,7 @@ class TestConfigIntegration:
     def test_config_import(self):
         """Ensure config module can be imported."""
         from aldakit.config import Config, load_config, get_config_paths
+
         assert Config is not None
         assert load_config is not None
         assert get_config_paths is not None

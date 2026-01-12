@@ -3,25 +3,25 @@
 # Input
 alda: Alda Source
 py-api: Python API
-midi-in: MIDI Input {
-  style.stroke-dash: 3
-}
+midi-in: MIDI Input
 
 # Core
 ast: AST
 
 # Output
 midi-out: MIDI Playback
+audio-out: Audio Output
 midi-file: MIDI File
 
 # Flows
 alda -> ast: parse()
 py-api -> ast: to_ast()
 py-api -> alda: to_alda()
-midi-in -> ast: transcribe() {style.stroke-dash: 3}
+midi-in -> ast: transcribe()
 
 ast -> alda: export()
 ast -> midi-out: play()
+ast -> audio-out: play(backend="audio")
 ast -> midi-file: save()
 
-midi-file -> ast: import() {style.stroke-dash: 3}
+midi-file -> ast: import()

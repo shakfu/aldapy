@@ -804,10 +804,10 @@ The compose API extends the existing parser/generator with programmatic construc
 | AST -> MIDI File | `Score.save()` | Implemented |
 | Alda File -> Score | `Score.from_file()` | Implemented |
 | Source String -> Score | `Score.from_source()` | Implemented |
-| Python Objects -> AST | `to_ast()` | Planned (compose module) |
-| Python Objects -> Alda | `to_alda()` | Planned (compose module) |
-| MIDI File -> Score | `Score.from_file()` | Future (Phase 6) |
-| MIDI Input -> Score | `transcribe()` | Future (Phase 6) |
+| Python Objects -> AST | `to_ast()` | Implemented (compose module) |
+| Python Objects -> Alda | `to_alda()` | Implemented (compose module) |
+| MIDI File -> Score | `Score.from_file()` | Implemented |
+| MIDI Input -> Score | `transcribe()` | Implemented |
 
 The parser remains essential for:
 
@@ -815,7 +815,7 @@ The parser remains essential for:
 - The `seq.from_alda()` convenience method for parsing snippets
 - Interop with other Alda tools
 
-## Future: MIDI Import (Phase 6)
+## MIDI Import
 
 The unified Score architecture supports MIDI import through the same interface:
 
@@ -841,16 +841,16 @@ transposed.save("transposed.alda")
 ### Real-time MIDI Transcription
 
 ```python
-from aldakit import MidiInput
+from aldakit.midi.transcriber import transcribe
 
-# Transcribe live MIDI input to Alda
-with MidiInput() as midi_in:
-    for score_fragment in midi_in.transcribe():
-        print(score_fragment.to_alda())
-        # Prints Alda notation as you play
+# Transcribe live MIDI input for 10 seconds
+score = transcribe(duration=10)
+
+# Export as Alda notation
+print(score.to_alda())
 ```
 
-These features would enable:
+These features enable:
 
 - Converting existing MIDI files to Alda notation
 - Real-time transcription from MIDI keyboards

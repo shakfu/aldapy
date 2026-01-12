@@ -303,7 +303,9 @@ class TestScoreAudioBackend:
         # Verify it has notes from both instruments
         midi = score.midi
         channels = set(note.channel for note in midi.notes)
-        assert len(channels) == 2, f"Expected 2 channels (violin, cello), got {channels}"
+        assert len(channels) == 2, (
+            f"Expected 2 channels (violin, cello), got {channels}"
+        )
 
         # Play with audio backend
         score.play(backend="audio", wait=True)

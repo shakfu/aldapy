@@ -144,7 +144,9 @@ class GeneratorState:
     variables: dict[str, EventSequenceNode] = field(default_factory=dict)
     markers: dict[str, float] = field(default_factory=dict)  # marker -> time in seconds
     parts: dict[str, PartState] = field(default_factory=dict)
-    current_parts: list[str] = field(default_factory=list)  # Active parts (multi-instrument support)
+    current_parts: list[str] = field(
+        default_factory=list
+    )  # Active parts (multi-instrument support)
     next_channel: int = 0
     repetition_number: int = 1  # Current repetition when in a repeat loop
 
@@ -517,20 +519,20 @@ class MidiGenerator:
             # Official Alda dynamics: volume 0-100 maps to velocity 0-127
             # velocity = volume * 127 / 100
             dynamics = {
-                "pppppp": 1,    # vol=1
-                "ppppp": 10,   # vol=8
-                "pppp": 20,    # vol=16
-                "ppp": 30,     # vol=24
-                "pp": 39,      # vol=31
-                "p": 50,       # vol=39
-                "mp": 58,      # vol=46
-                "mf": 69,      # vol=54
-                "f": 79,       # vol=62
-                "ff": 88,      # vol=69
-                "fff": 98,     # vol=77
-                "ffff": 108,   # vol=85
+                "pppppp": 1,  # vol=1
+                "ppppp": 10,  # vol=8
+                "pppp": 20,  # vol=16
+                "ppp": 30,  # vol=24
+                "pp": 39,  # vol=31
+                "p": 50,  # vol=39
+                "mp": 58,  # vol=46
+                "mf": 69,  # vol=54
+                "f": 79,  # vol=62
+                "ff": 88,  # vol=69
+                "fff": 98,  # vol=77
+                "ffff": 108,  # vol=85
                 "fffff": 117,  # vol=92
-                "ffffff": 127, # vol=100
+                "ffffff": 127,  # vol=100
             }
             velocity = dynamics.get(func_name, 69)
             for part in all_parts:
@@ -776,10 +778,7 @@ class MidiGenerator:
             return
 
         # Save current state for all parts
-        saved_states = {
-            id(p): (p.current_time, p.default_duration)
-            for p in all_parts
-        }
+        saved_states = {id(p): (p.current_time, p.default_duration) for p in all_parts}
 
         # Set a temporary duration for each event in all parts
         for p in all_parts:

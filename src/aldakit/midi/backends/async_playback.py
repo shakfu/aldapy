@@ -12,11 +12,16 @@ import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable
 
+from ...constants import (
+    MAX_PLAYBACK_SLOTS,
+    PLAYBACK_SLEEP_THRESHOLD,
+    POLL_INTERVAL_DEFAULT,
+    SEQUENTIAL_MODE_SLEEP,
+    THREAD_JOIN_TIMEOUT,
+)
+
 if TYPE_CHECKING:
     from ..types import MidiSequence
-
-# Maximum number of concurrent playback slots
-MAX_SLOTS = 8
 
 
 @dataclass
@@ -49,7 +54,7 @@ class AsyncPlaybackManager:
     """Manages concurrent MIDI playback with multiple slots.
 
     This class implements a slot-based playback system that allows
-    up to MAX_SLOTS (8) concurrent sequences to play simultaneously.
+    up to MAX_PLAYBACK_SLOTS concurrent sequences to play simultaneously.
 
     Modes:
         - Concurrent mode (default): New playback starts immediately,
@@ -87,7 +92,7 @@ class AsyncPlaybackManager:
         self._send_control_change = send_control_change
         self._send_all_notes_off = send_all_notes_off
 
-        self._slots = [PlaybackSlot(slot_id=i) for i in range(MAX_SLOTS)]
+        self._slots = [PlaybackSlot(slot_id=i) for i in range(MAX_PLAYBACK_SLOTS)]
         self._lock = threading.Lock()
         self._concurrent_mode = True
         self._shutdown = False
@@ -127,14 +132,18 @@ class AsyncPlaybackManager:
         # Add program changes
         for pc in sequence.program_changes:
             events.append(
-                PlaybackEvent(time=pc.time, event_type="program", args=(pc.channel, pc.program))
+                PlaybackEvent(
+                    time=pc.time, event_type="program", args=(pc.channel, pc.program)
+                )
             )
 
         # Add control changes
         for cc in sequence.control_changes:
             events.append(
                 PlaybackEvent(
-                    time=cc.time, event_type="control", args=(cc.channel, cc.control, cc.value)
+                    time=cc.time,
+                    event_type="control",
+                    args=(cc.channel, cc.control, cc.value),
                 )
             )
 
@@ -176,8 +185,8 @@ class AsyncPlaybackManager:
                     if slot.stop_requested or self._shutdown:
                         break
                     remaining = target_time - time.perf_counter()
-                    if remaining > 0.01:
-                        time.sleep(0.01)
+                    if remaining > PLAYBACK_SLEEP_THRESHOLD:
+                        time.sleep(PLAYBACK_SLEEP_THRESHOLD)
                     elif remaining > 0:
                         time.sleep(remaining)
                     else:
@@ -221,7 +230,7 @@ class AsyncPlaybackManager:
         # In sequential mode, wait for all playback to complete
         if not self._concurrent_mode:
             while self.is_playing():
-                time.sleep(0.01)
+                time.sleep(SEQUENTIAL_MODE_SLEEP)
 
         # Find a free slot
         slot = self._find_free_slot()
@@ -239,7 +248,9 @@ class AsyncPlaybackManager:
             slot.event_index = 0
             slot.stop_requested = False
 
-        slot.thread = threading.Thread(target=self._play_slot, args=(slot,), daemon=True)
+        slot.thread = threading.Thread(
+            target=self._play_slot, args=(slot,), daemon=True
+        )
         slot.thread.start()
 
         return slot.slot_id
@@ -255,7 +266,7 @@ class AsyncPlaybackManager:
         # Wait for all threads to finish (with timeout)
         for slot in self._slots:
             if slot.thread and slot.thread.is_alive():
-                slot.thread.join(timeout=0.5)
+                slot.thread.join(timeout=THREAD_JOIN_TIMEOUT)
 
         # Send all notes off
         if self._send_all_notes_off:
@@ -265,18 +276,18 @@ class AsyncPlaybackManager:
         """Stop a specific playback slot.
 
         Args:
-            slot_id: The slot ID to stop (0-7).
+            slot_id: The slot ID to stop (0 to MAX_PLAYBACK_SLOTS-1).
         """
-        if 0 <= slot_id < MAX_SLOTS:
+        if 0 <= slot_id < MAX_PLAYBACK_SLOTS:
             slot = self._slots[slot_id]
             with self._lock:
                 if slot.active:
                     slot.stop_requested = True
 
             if slot.thread and slot.thread.is_alive():
-                slot.thread.join(timeout=0.5)
+                slot.thread.join(timeout=THREAD_JOIN_TIMEOUT)
 
-    def wait(self, poll_interval: float = 0.05) -> None:
+    def wait(self, poll_interval: float = POLL_INTERVAL_DEFAULT) -> None:
         """Block until all playback completes.
 
         Args:

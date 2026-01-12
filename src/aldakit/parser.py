@@ -591,7 +591,9 @@ class Parser:
                 quoted_symbol = LispSymbolNode(
                     name=symbol_token.lexeme, position=symbol_token.position
                 )
-                return LispQuotedNode(value=quoted_symbol, position=quote_token.position)
+                return LispQuotedNode(
+                    value=quoted_symbol, position=quote_token.position
+                )
             else:
                 self._error("Expected '(' or symbol after quote")
 

@@ -54,8 +54,8 @@ publish: check
 assets:
 	@mkdir -p docs/assets
 	@$(foreach f,$(wildcard docs/*.d2),$(call d2-render,$(f),svg);)
-	@$(foreach f,$(wildcard docs/*.d2),$(call d2-render,$(f),png);)
 	@$(foreach f,$(wildcard docs/*.d2),$(call d2-render,$(f),pdf);)
+	@$(foreach f,$(wildcard docs/*.d2),$(call d2-render,$(f),png);)
 
 clean:
 	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

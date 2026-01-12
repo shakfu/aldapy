@@ -1,13 +1,13 @@
 [project]
 name = "aldakit"
-version = "0.1.8"
+version = "0.1.9"
 description = "Python parser and MIDI generator for the Alda music programming language"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 dependencies = []
 authors = [
-    { name = "Shakeeb Alireza", email = "me@example.org" }
+    { name = "Shakeeb Alireza", email = "shakfu@users.noreply.github.com" }
 ]
 keywords = ["alda", "midi", "music", "parser", "composition", "audio"]
 classifiers = [

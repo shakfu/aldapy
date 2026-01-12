@@ -28,7 +28,7 @@ def test_stdin_mode_uses_backend_context(monkeypatch):
     exited = False
 
     class DummyBackend:
-        def __init__(self, port_name=None):
+        def __init__(self, port_name=None, virtual_port_name=None):
             pass
 
         def __enter__(self):
@@ -52,7 +52,9 @@ def test_stdin_mode_uses_backend_context(monkeypatch):
     monkeypatch.setattr("aldakit.cli.LibremidiBackend", DummyBackend)
     monkeypatch.setattr(builtins, "input", fake_input)
 
-    assert stdin_mode(port_name=None, verbose=False) == 0
+    assert (
+        stdin_mode(port_name=None, verbose=False, virtual_port_name="AldakitMIDI") == 0
+    )
     assert entered and exited
 
 

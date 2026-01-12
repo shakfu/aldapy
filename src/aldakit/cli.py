@@ -7,6 +7,16 @@ from pathlib import Path
 
 from . import __version__, generate_midi, parse
 from .config import load_config
+from .constants import (
+    DEFAULT_QUANTIZE_GRID,
+    DEFAULT_RECORDING_DURATION,
+    DEFAULT_SWING_RATIO,
+    DEFAULT_TEMPO,
+    DEFAULT_VIRTUAL_PORT_NAME,
+    POLL_INTERVAL_PLAYBACK,
+    SWING_RATIO_MAX,
+    SWING_RATIO_MIN,
+)
 from .errors import AldaParseError
 from .midi import LibremidiBackend
 
@@ -26,12 +36,15 @@ def create_parser() -> argparse.ArgumentParser:
 
     subparsers = parser.add_subparsers(dest="command")
 
+    # ------------------------------------------------------------
     # repl subcommand
+
     repl_parser = subparsers.add_parser(
         "repl",
         help="Interactive REPL with line editing and history",
     )
     repl_parser.add_argument(
+        "-p",
         "--port",
         metavar="NAME",
         help="MIDI output port name",
@@ -48,13 +61,28 @@ def create_parser() -> argparse.ArgumentParser:
         help="Use sequential mode (wait for each input to finish)",
     )
     repl_parser.add_argument(
+        "-a",
+        "--audio",
+        action="store_true",
+        help="Use built-in audio backend (with configured soundfont)",
+    )
+    repl_parser.add_argument(
         "-sf",
         "--soundfont",
         metavar="FILE",
         help="Use TinySoundFont audio backend with specified SoundFont file",
     )
+    repl_parser.add_argument(
+        "-vp",
+        "--virtual-port",
+        metavar="NAME",
+        default=DEFAULT_VIRTUAL_PORT_NAME,
+        help=f"Name for virtual MIDI port (default: {DEFAULT_VIRTUAL_PORT_NAME})",
+    )
 
+    # ------------------------------------------------------------
     # ports subcommand
+
     ports_parser = subparsers.add_parser(
         "ports",
         help="List available MIDI ports",
@@ -72,7 +100,9 @@ def create_parser() -> argparse.ArgumentParser:
         help="List only MIDI output ports",
     )
 
+    # ------------------------------------------------------------
     # transcribe subcommand
+
     transcribe_parser = subparsers.add_parser(
         "transcribe",
         help="Record MIDI input and output Alda code",
@@ -81,9 +111,9 @@ def create_parser() -> argparse.ArgumentParser:
         "-d",
         "--duration",
         type=float,
-        default=10.0,
+        default=DEFAULT_RECORDING_DURATION,
         metavar="SECONDS",
-        help="Recording duration in seconds (default: 10)",
+        help=f"Recording duration in seconds (default: {DEFAULT_RECORDING_DURATION:.0f})",
     )
     transcribe_parser.add_argument(
         "-i",
@@ -96,17 +126,17 @@ def create_parser() -> argparse.ArgumentParser:
         "-t",
         "--tempo",
         type=float,
-        default=120.0,
+        default=DEFAULT_TEMPO,
         metavar="BPM",
-        help="Tempo in BPM for quantization (default: 120)",
+        help=f"Tempo in BPM for quantization (default: {DEFAULT_TEMPO})",
     )
     transcribe_parser.add_argument(
         "-q",
         "--quantize",
         type=float,
-        default=0.25,
+        default=DEFAULT_QUANTIZE_GRID,
         metavar="GRID",
-        help="Quantize grid in beats (default: 0.25 = 16th notes)",
+        help=f"Quantize grid in beats (default: {DEFAULT_QUANTIZE_GRID} = 16th notes)",
     )
     transcribe_parser.add_argument(
         "--feel",
@@ -117,9 +147,9 @@ def create_parser() -> argparse.ArgumentParser:
     transcribe_parser.add_argument(
         "--swing-ratio",
         type=float,
-        default=2.0 / 3.0,
+        default=DEFAULT_SWING_RATIO,
         metavar="RATIO",
-        help="Swing ratio for long vs short notes (default: 0.666...)",
+        help=f"Swing ratio for long vs short notes (default: {DEFAULT_SWING_RATIO:.3f})",
     )
     transcribe_parser.add_argument(
         "-o",
@@ -150,14 +180,18 @@ def create_parser() -> argparse.ArgumentParser:
         help="Show notes in Alda notation (requires -v)",
     )
 
+    # ------------------------------------------------------------
     # play subcommand
+
     play_parser = subparsers.add_parser(
         "play",
         help="Play an Alda file or code",
     )
     _add_play_arguments(play_parser)
 
-    # eval subcommand (shorthand for play -e)
+    # ------------------------------------------------------------
+    # eval subcommand
+
     eval_parser = subparsers.add_parser(
         "eval",
         help="Evaluate Alda code directly",
@@ -174,6 +208,12 @@ def create_parser() -> argparse.ArgumentParser:
         help="Print verbose output",
     )
     eval_parser.add_argument(
+        "-a",
+        "--audio",
+        action="store_true",
+        help="Use built-in audio backend (with configured soundfont)",
+    )
+    eval_parser.add_argument(
         "-sf",
         "--soundfont",
         metavar="FILE",
@@ -187,9 +227,17 @@ def create_parser() -> argparse.ArgumentParser:
         help="Save to MIDI file instead of playing",
     )
     eval_parser.add_argument(
+        "-p",
         "--port",
         metavar="NAME",
         help="MIDI output port name or index (see 'aldakit ports')",
+    )
+    eval_parser.add_argument(
+        "-vp",
+        "--virtual-port",
+        metavar="NAME",
+        default=DEFAULT_VIRTUAL_PORT_NAME,
+        help=f"Name for virtual MIDI port (default: {DEFAULT_VIRTUAL_PORT_NAME})",
     )
 
     return parser
@@ -251,10 +299,25 @@ def _add_play_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        "-a",
+        "--audio",
+        action="store_true",
+        help="Use built-in audio backend (with configured soundfont)",
+    )
+
+    parser.add_argument(
         "-sf",
         "--soundfont",
         metavar="FILE",
         help="Use TinySoundFont audio backend with specified SoundFont file",
+    )
+
+    parser.add_argument(
+        "-vp",
+        "--virtual-port",
+        metavar="NAME",
+        default=DEFAULT_VIRTUAL_PORT_NAME,
+        help=f"Name for virtual MIDI port (default: {DEFAULT_VIRTUAL_PORT_NAME})",
     )
 
 
@@ -295,7 +358,7 @@ def transcribe_command(args: argparse.Namespace) -> int:
     from .midi.transcriber import transcribe
 
     # Validate swing ratio
-    if not 0 < args.swing_ratio < 1:
+    if not SWING_RATIO_MIN < args.swing_ratio < SWING_RATIO_MAX:
         print(
             "Error: --swing-ratio must be between 0 and 1 (exclusive).",
             file=sys.stderr,
@@ -366,7 +429,11 @@ def transcribe_command(args: argparse.Namespace) -> int:
     return 0
 
 
-def stdin_mode(port_name: str | None, verbose: bool) -> int:
+def stdin_mode(
+    port_name: str | None,
+    verbose: bool,
+    virtual_port_name: str = DEFAULT_VIRTUAL_PORT_NAME,
+) -> int:
     """Read alda code from stdin, blank line to play."""
     if port_name:
         print(
@@ -374,10 +441,12 @@ def stdin_mode(port_name: str | None, verbose: bool) -> int:
         )
     else:
         print(
-            "Opening AldakitMIDI port... Paste Alda code, blank line twice to play. Ctrl+C to exit."
+            f"Opening {virtual_port_name} port... Paste Alda code, blank line twice to play. Ctrl+C to exit."
         )
 
-    with LibremidiBackend(port_name=port_name) as backend:
+    with LibremidiBackend(
+        port_name=port_name, virtual_port_name=virtual_port_name
+    ) as backend:
         try:
             while True:
                 lines = []
@@ -409,7 +478,7 @@ def stdin_mode(port_name: str | None, verbose: bool) -> int:
 
                     backend.play(sequence)
                     while backend.is_playing():
-                        time.sleep(0.1)
+                        time.sleep(POLL_INTERVAL_PLAYBACK)
 
                 except AldaParseError as e:
                     print(f"Parse error: {e}", file=sys.stderr)
@@ -436,6 +505,9 @@ def read_source(args: argparse.Namespace) -> tuple[str, str]:
             file=sys.stderr,
         )
         sys.exit(1)
+
+    # file_arg is a Path at this point (type narrowing for the checker)
+    assert file_arg is not None
 
     if str(file_arg) == "-":
         return sys.stdin.read(), "<stdin>"
@@ -536,13 +608,27 @@ def main(argv: list[str] | None = None) -> int:
         concurrent = not getattr(args, "sequential", False)
         verbose = args.verbose or config.verbose
 
-        # CLI -sf explicitly forces audio mode
+        # CLI -a or -sf explicitly forces audio mode
+        cli_audio = getattr(args, "audio", False)
         cli_soundfont = getattr(args, "soundfont", None)
-        # Audio mode if: CLI -sf passed, or config.backend="audio"
-        use_audio = cli_soundfont is not None or config.backend == "audio"
+        # Audio mode if: CLI -a passed, CLI -sf passed, or config.backend="audio"
+        use_audio = cli_audio or cli_soundfont is not None or config.backend == "audio"
         # Soundfont: CLI overrides config (config.soundfont is fallback)
         soundfont = cli_soundfont or config.soundfont
 
+        # Error if audio mode requested but no soundfont configured
+        if use_audio and not soundfont:
+            print(
+                "Error: No soundfont configured for audio backend.",
+                file=sys.stderr,
+            )
+            print(
+                "Set ALDAKIT_SOUNDFONT environment variable or use -sf PATH.",
+                file=sys.stderr,
+            )
+            return 1
+
+        virtual_port = getattr(args, "virtual_port", DEFAULT_VIRTUAL_PORT_NAME)
         return run_repl(
             port,
             verbose,
@@ -550,6 +636,7 @@ def main(argv: list[str] | None = None) -> int:
             use_audio=use_audio,
             soundfont=soundfont,
             default_tempo=config.tempo,
+            virtual_port_name=virtual_port,
         )
 
     if args.command == "ports":
@@ -579,7 +666,8 @@ def main(argv: list[str] | None = None) -> int:
     output = getattr(args, "output", None)
     verbose = getattr(args, "verbose", False) or config.verbose
 
-    # CLI -sf explicitly passed forces audio mode
+    # CLI -a or -sf explicitly passed forces audio mode
+    cli_audio = getattr(args, "audio", False)
     cli_soundfont = getattr(args, "soundfont", None)
 
     # Resolve port specifier (can be index like "0" or name)
@@ -602,11 +690,15 @@ def main(argv: list[str] | None = None) -> int:
             use_audio=use_audio,
             soundfont=soundfont,
             default_tempo=config.tempo,
+            virtual_port_name=DEFAULT_VIRTUAL_PORT_NAME,
         )
+
+    # Get virtual port name for play/eval subcommands
+    virtual_port = getattr(args, "virtual_port", DEFAULT_VIRTUAL_PORT_NAME)
 
     # Handle --stdin (play subcommand only)
     if stdin_mode_flag:
-        return stdin_mode(port, verbose)
+        return stdin_mode(port, verbose, virtual_port)
 
     # If no file and no -e in play subcommand, show error
     file_arg = getattr(args, "file", None)
@@ -666,29 +758,33 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     # Determine backend:
+    # - CLI -a explicitly forces audio mode
     # - CLI -sf explicitly forces audio mode
     # - config.backend="audio" forces audio mode
     # - config.soundfont is just a fallback path when audio is needed
-    use_audio = cli_soundfont is not None or config.backend == "audio"
+    use_audio = cli_audio or cli_soundfont is not None or config.backend == "audio"
     soundfont = cli_soundfont or config.soundfont
+
+    # Error if audio mode explicitly requested but no soundfont configured
+    if use_audio and not soundfont:
+        print(
+            "Error: No soundfont configured for audio backend.",
+            file=sys.stderr,
+        )
+        print(
+            "Set ALDAKIT_SOUNDFONT environment variable or use -sf PATH.",
+            file=sys.stderr,
+        )
+        return 1
 
     if not use_audio and port is None:
         # Check if any MIDI output ports are available
         ports = LibremidiBackend().list_output_ports()
         if not ports:
-            # No MIDI ports - fall back to audio if soundfont is configured
+            # No MIDI ports - fall back to audio if soundfont is configured,
+            # otherwise let the backend create a virtual port (AldakitMIDI)
             if soundfont:
                 use_audio = True
-            else:
-                print(
-                    "No MIDI output ports available.",
-                    file=sys.stderr,
-                )
-                print(
-                    "Use -sf /path/to/soundfont.sf2 for TinySoundFont audio backend.",
-                    file=sys.stderr,
-                )
-                return 1
 
     # Play
     if verbose:
@@ -721,7 +817,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Error: {e}", file=sys.stderr)
                 return 1
         else:
-            backend = LibremidiBackend(port_name=port)
+            backend = LibremidiBackend(port_name=port, virtual_port_name=virtual_port)
 
             with backend:
                 backend.play(sequence)
@@ -729,7 +825,7 @@ def main(argv: list[str] | None = None) -> int:
                 if not no_wait:
                     try:
                         while backend.is_playing():
-                            time.sleep(0.1)
+                            time.sleep(POLL_INTERVAL_PLAYBACK)
                     except KeyboardInterrupt:
                         if verbose:
                             print("\nStopping playback...", file=sys.stderr)

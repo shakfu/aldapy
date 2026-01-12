@@ -15,6 +15,16 @@ from prompt_toolkit.keys import Keys
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles import Style
 
+from .constants import (
+    DEFAULT_TEMPO,
+    DEFAULT_VIRTUAL_PORT_NAME,
+    POLL_INTERVAL_DEFAULT,
+    REPL_COMPLETION_MIN_WORD_LENGTH,
+    REPL_CONTINUATION_PROMPT,
+    REPL_HISTORY_FILENAME,
+    REPL_INSTRUMENT_COLUMNS,
+    REPL_PROMPT,
+)
 from .errors import AldaParseError
 from .midi.backends import LibremidiBackend
 from .midi.generator import generate_midi
@@ -180,7 +190,7 @@ class AldaCompleter(Completer):
         # Only complete instruments if:
         # - At start of line (no content yet), OR
         # - Word is at least 3 chars (to avoid matching notes)
-        if ":" not in line and len(word) >= 3:
+        if ":" not in line and len(word) >= REPL_COMPLETION_MIN_WORD_LENGTH:
             for inst in self.instruments:
                 if inst.startswith(word):
                     yield Completion(inst + ": ", start_position=-len(word))
@@ -219,7 +229,8 @@ def run_repl(
     concurrent: bool = True,
     use_audio: bool = False,
     soundfont: str | None = None,
-    default_tempo: int = 120,
+    default_tempo: int = DEFAULT_TEMPO,
+    virtual_port_name: str = DEFAULT_VIRTUAL_PORT_NAME,
 ) -> int:
     """Run the interactive alda REPL.
 
@@ -230,20 +241,18 @@ def run_repl(
             where multiple inputs layer on top of each other.
         use_audio: If True, use TinySoundFont audio backend instead of MIDI.
         soundfont: Path to SoundFont file (for audio backend).
-        default_tempo: Default tempo in BPM (default: 120).
+        default_tempo: Default tempo in BPM (default: DEFAULT_TEMPO).
+        virtual_port_name: Name for virtual MIDI port (default: DEFAULT_VIRTUAL_PORT_NAME).
     """
     # Check for MIDI ports if not using audio
     if not use_audio and port_name is None:
         test_backend = LibremidiBackend()
         ports = test_backend.list_output_ports()
         if not ports:
-            # No MIDI ports - fall back to audio if soundfont is configured
+            # No MIDI ports - fall back to audio if soundfont is configured,
+            # otherwise let the backend create a virtual port (AldakitMIDI)
             if soundfont:
                 use_audio = True
-            else:
-                print("No MIDI output ports available.")
-                print("Use -sf /path/to/soundfont.sf2 for TinySoundFont audio backend.")
-                return 1
 
     if use_audio:
         from .midi.backends import TsfBackend, HAS_TSF
@@ -262,12 +271,16 @@ def run_repl(
         # TsfBackend doesn't support concurrent mode
         supports_concurrent = False
     else:
-        backend = LibremidiBackend(port_name=port_name, concurrent=concurrent)
+        backend = LibremidiBackend(
+            port_name=port_name,
+            concurrent=concurrent,
+            virtual_port_name=virtual_port_name,
+        )
         backend._ensure_port_open()
-        backend_name = "AldakitMIDI"
+        backend_name = virtual_port_name
         supports_concurrent = True
 
-    history_file = Path.home() / ".alda_history"
+    history_file = Path.home() / REPL_HISTORY_FILENAME
 
     session = PromptSession(
         history=FileHistory(str(history_file)),
@@ -276,7 +289,9 @@ def run_repl(
         style=ALDA_STYLE,
         key_bindings=create_key_bindings(backend),
         multiline=False,
-        prompt_continuation=lambda width, line_number, is_soft_wrap: "  ... ",
+        prompt_continuation=lambda width,
+        line_number,
+        is_soft_wrap: REPL_CONTINUATION_PROMPT,
     )
 
     # State (default_tempo passed as parameter)
@@ -293,7 +308,7 @@ def run_repl(
     try:
         while True:
             try:
-                source = session.prompt("aldakit> ").strip()
+                source = session.prompt(REPL_PROMPT).strip()
             except EOFError:
                 break
             except KeyboardInterrupt:
@@ -320,7 +335,9 @@ def run_repl(
                     print("  :stop             - Stop playback")
                     print("  :status           - Show playback status")
                     print("  :concurrent       - Enable concurrent mode (layer inputs)")
-                    print("  :sequential       - Enable sequential mode (wait for each)")
+                    print(
+                        "  :sequential       - Enable sequential mode (wait for each)"
+                    )
                     print()
                     print("Shortcuts:")
                     print("  Alt+Enter         - Multi-line input")
@@ -335,13 +352,13 @@ def run_repl(
                             for i, p in enumerate(ports):
                                 print(f"  {i}: {p}")
                         else:
-                            print("  (no ports - using virtual AldakitMIDI)")
+                            print(f"  (no ports - using virtual {virtual_port_name})")
                     else:
                         print("  (using TinySoundFont audio backend)")
                 elif cmd == "instruments":
                     insts = sorted(INSTRUMENT_PROGRAMS.keys())
                     # Print in columns
-                    cols = 4
+                    cols = REPL_INSTRUMENT_COLUMNS
                     for i in range(0, len(insts), cols):
                         row = insts[i : i + cols]
                         print("  " + "  ".join(f"{inst:20}" for inst in row))
@@ -362,17 +379,19 @@ def run_repl(
                     if supports_concurrent:
                         mode = "concurrent" if backend.concurrent_mode else "sequential"
                         slots = backend.active_slots
-                        print(f"Backend: MIDI (libremidi)")
+                        print("Backend: MIDI (libremidi)")
                         print(f"Mode: {mode}")
                         print(f"Status: {playing}")
                         print(f"Active slots: {slots}/8")
                     else:
-                        print(f"Backend: Audio (TinySoundFont)")
+                        print("Backend: Audio (TinySoundFont)")
                         print(f"Status: {playing}")
                 elif cmd == "concurrent":
                     if supports_concurrent:
                         backend.concurrent_mode = True
-                        print("Concurrent mode enabled - inputs will layer on each other")
+                        print(
+                            "Concurrent mode enabled - inputs will layer on each other"
+                        )
                     else:
                         print("Concurrent mode not available with audio backend")
                 elif cmd == "sequential":
@@ -407,7 +426,7 @@ def run_repl(
                 elif not supports_concurrent or not backend.concurrent_mode:
                     # In sequential mode (or audio backend), wait for playback
                     while backend.is_playing():
-                        time.sleep(0.05)
+                        time.sleep(POLL_INTERVAL_DEFAULT)
                 # In concurrent mode, return immediately to accept next input
 
             except AldaParseError as e:

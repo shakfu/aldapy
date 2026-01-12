@@ -57,6 +57,13 @@ aldakit play examples/bach-prelude.alda -o bach.mid
 # Use built-in audio (TinySoundFont) instead of MIDI
 aldakit play -sf ~/Music/sf2/FluidR3_GM.sf2 examples/twinkle.alda
 aldakit repl -sf ~/Music/sf2/FluidR3_GM.sf2
+
+# Use audio backend with pre-configured soundfont (from config or env)
+aldakit play -a examples/twinkle.alda
+aldakit repl -a
+
+# Create virtual MIDI port with custom name
+aldakit repl -vp MyMIDI
 ```
 
 ### Python API
@@ -484,7 +491,7 @@ aldakit [--version] [-h] {repl,play,eval,ports,transcribe} ...
 ### `play` Subcommand
 
 ```sh
-aldakit play [-v] [-o FILE] [--port NAME|INDEX] [-sf FILE] [--stdin] [--parse-only] [--no-wait] FILE
+aldakit play [-v] [-o FILE] [--port NAME|INDEX] [-sf FILE] [-a] [-vp NAME] [--stdin] [--parse-only] [--no-wait] FILE
 ```
 
 | Option | Description |
@@ -494,6 +501,8 @@ aldakit play [-v] [-o FILE] [--port NAME|INDEX] [-sf FILE] [--stdin] [--parse-on
 | `-o, --output FILE` | Save to MIDI file instead of playing |
 | `--port NAME\|INDEX` | MIDI port by name or index (see `aldakit ports`) |
 | `-sf, --soundfont FILE` | Use TinySoundFont audio backend with specified SoundFont |
+| `-a, --audio` | Use audio backend with pre-configured soundfont |
+| `-vp, --virtual-port NAME` | Custom virtual MIDI port name (default: AldakitMIDI) |
 | `--stdin` | Read from stdin (blank line to play) |
 | `--parse-only` | Print AST without playing |
 | `--no-wait` | Don't wait for playback to finish |
@@ -501,7 +510,7 @@ aldakit play [-v] [-o FILE] [--port NAME|INDEX] [-sf FILE] [--stdin] [--parse-on
 ### `eval` Subcommand
 
 ```sh
-aldakit eval [-v] [-o FILE] [--port NAME|INDEX] [-sf FILE] CODE
+aldakit eval [-v] [-o FILE] [--port NAME|INDEX] [-sf FILE] [-a] [-vp NAME] CODE
 ```
 
 | Option | Description |
@@ -511,11 +520,13 @@ aldakit eval [-v] [-o FILE] [--port NAME|INDEX] [-sf FILE] CODE
 | `-o, --output FILE` | Save to MIDI file instead of playing |
 | `--port NAME\|INDEX` | MIDI port by name or index |
 | `-sf, --soundfont FILE` | Use TinySoundFont audio backend |
+| `-a, --audio` | Use audio backend with pre-configured soundfont |
+| `-vp, --virtual-port NAME` | Custom virtual MIDI port name (default: AldakitMIDI) |
 
 ### `repl` Subcommand
 
 ```sh
-aldakit repl [-v] [--port NAME|INDEX] [-sf FILE] [--sequential]
+aldakit repl [-v] [--port NAME|INDEX] [-sf FILE] [-a] [-vp NAME] [--sequential]
 ```
 
 | Option | Description |
@@ -523,6 +534,8 @@ aldakit repl [-v] [--port NAME|INDEX] [-sf FILE] [--sequential]
 | `-v, --verbose` | Verbose output |
 | `--port NAME\|INDEX` | MIDI port by name or index |
 | `-sf, --soundfont FILE` | Use TinySoundFont audio backend |
+| `-a, --audio` | Use audio backend with pre-configured soundfont |
+| `-vp, --virtual-port NAME` | Custom virtual MIDI port name (default: AldakitMIDI) |
 | `--sequential` | Start in sequential mode (wait for each input) |
 
 ### `transcribe` Subcommand
@@ -644,19 +657,24 @@ verbose = false
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `soundfont` | path | none | SoundFont path (used as fallback when no MIDI ports available) |
-| `backend` | string | `midi` | Default backend: `midi` or `audio` |
+| `soundfont` | path | none | SoundFont path for audio backend |
+| `backend` | string | `midi` | `midi` = external synths/DAWs/virtual port; `audio` = built-in TinySoundFont |
 | `port` | string | none | Default MIDI output port name |
 | `tempo` | integer | `120` | Default tempo for REPL (BPM) |
 | `verbose` | boolean | `false` | Enable verbose output |
 
+**Backend values:**
+- `midi` (default): Uses libremidi for MIDI output. Sends to external synthesizers (FluidSynth, hardware), DAWs, or creates a virtual port ("AldakitMIDI") for routing.
+- `audio`: Uses built-in TinySoundFont for direct audio output. Requires a `soundfont` to be configured. No external MIDI setup needed.
+
 ### Backend Selection Priority
 
-1. CLI `-sf /path/to/soundfont.sf2` forces audio backend
-2. Config `backend = audio` forces audio backend
-3. If MIDI ports are available, use MIDI (default)
-4. If no MIDI ports available and `soundfont` is configured, fall back to audio
-5. If no MIDI ports and no soundfont configured, show error
+1. CLI `-sf /path/to/soundfont.sf2` forces audio backend with specified soundfont
+2. CLI `-a` / `--audio` forces audio backend using pre-configured soundfont
+3. Config `backend = audio` uses audio backend
+4. If MIDI ports are available, use MIDI (default)
+5. If no MIDI ports available and `soundfont` is configured, fall back to audio
+6. If no MIDI ports and no soundfont configured, create virtual MIDI port ("AldakitMIDI")
 
 ### Project-Local Configuration
 

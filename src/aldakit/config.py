@@ -15,6 +15,10 @@ Example config file (~/.aldakit/config.ini):
     port = FluidSynth
     tempo = 120
     verbose = false
+
+Backend options:
+    - "midi": Use libremidi for MIDI output (external synths, DAWs, virtual port)
+    - "audio": Use built-in TinySoundFont for direct audio output (requires soundfont)
 """
 
 import os
@@ -22,15 +26,17 @@ from configparser import ConfigParser
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .constants import DEFAULT_BACKEND, DEFAULT_TEMPO
+
 
 @dataclass
 class Config:
     """aldakit configuration."""
 
     soundfont: str | None = None
-    backend: str = "midi"  # "midi" or "audio"
+    backend: str = DEFAULT_BACKEND  # "midi" or "audio"
     port: str | None = None
-    tempo: int = 120
+    tempo: int = DEFAULT_TEMPO
     verbose: bool = False
 
     # Source tracking (for debugging)

@@ -1,15 +1,14 @@
 """Tests for async/concurrent playback system."""
 
-import threading
 import time
 
 import pytest
 
+from aldakit.constants import MAX_PLAYBACK_SLOTS
 from aldakit.midi.backends.async_playback import (
     AsyncPlaybackManager,
     PlaybackEvent,
     PlaybackSlot,
-    MAX_SLOTS,
 )
 from aldakit.midi.types import MidiNote, MidiSequence
 
@@ -27,7 +26,7 @@ class TestPlaybackSlot:
         assert slot.thread is None
 
     def test_slot_id(self):
-        for i in range(MAX_SLOTS):
+        for i in range(MAX_PLAYBACK_SLOTS):
             slot = PlaybackSlot(slot_id=i)
             assert slot.slot_id == i
 
@@ -105,16 +104,24 @@ class TestAsyncPlaybackManager:
     def test_play_returns_slot_id(self, manager):
         """Play returns a slot ID."""
         seq = MidiSequence(
-            notes=[MidiNote(pitch=60, velocity=100, start_time=0.0, duration=0.1, channel=0)]
+            notes=[
+                MidiNote(
+                    pitch=60, velocity=100, start_time=0.0, duration=0.1, channel=0
+                )
+            ]
         )
         slot_id = manager.play(seq)
         assert slot_id is not None
-        assert 0 <= slot_id < MAX_SLOTS
+        assert 0 <= slot_id < MAX_PLAYBACK_SLOTS
 
     def test_play_increments_active_count(self, manager):
         """Playing increments active count."""
         seq = MidiSequence(
-            notes=[MidiNote(pitch=60, velocity=100, start_time=0.0, duration=0.5, channel=0)]
+            notes=[
+                MidiNote(
+                    pitch=60, velocity=100, start_time=0.0, duration=0.5, channel=0
+                )
+            ]
         )
         assert manager.active_count == 0
         manager.play(seq)
@@ -126,7 +133,11 @@ class TestAsyncPlaybackManager:
     def test_stop_all_slots(self, manager):
         """Stop stops all playing slots."""
         seq = MidiSequence(
-            notes=[MidiNote(pitch=60, velocity=100, start_time=0.0, duration=5.0, channel=0)]
+            notes=[
+                MidiNote(
+                    pitch=60, velocity=100, start_time=0.0, duration=5.0, channel=0
+                )
+            ]
         )
         manager.play(seq)
         time.sleep(0.05)
@@ -140,7 +151,11 @@ class TestAsyncPlaybackManager:
     def test_wait_blocks_until_complete(self, manager):
         """Wait blocks until playback completes."""
         seq = MidiSequence(
-            notes=[MidiNote(pitch=60, velocity=100, start_time=0.0, duration=0.1, channel=0)]
+            notes=[
+                MidiNote(
+                    pitch=60, velocity=100, start_time=0.0, duration=0.1, channel=0
+                )
+            ]
         )
         start = time.perf_counter()
         manager.play(seq)
@@ -153,10 +168,18 @@ class TestAsyncPlaybackManager:
     def test_concurrent_playback_multiple_slots(self, manager):
         """Multiple sequences can play concurrently."""
         seq1 = MidiSequence(
-            notes=[MidiNote(pitch=60, velocity=100, start_time=0.0, duration=0.5, channel=0)]
+            notes=[
+                MidiNote(
+                    pitch=60, velocity=100, start_time=0.0, duration=0.5, channel=0
+                )
+            ]
         )
         seq2 = MidiSequence(
-            notes=[MidiNote(pitch=64, velocity=100, start_time=0.0, duration=0.5, channel=1)]
+            notes=[
+                MidiNote(
+                    pitch=64, velocity=100, start_time=0.0, duration=0.5, channel=1
+                )
+            ]
         )
 
         slot1 = manager.play(seq1)
@@ -176,10 +199,18 @@ class TestAsyncPlaybackManager:
         manager.concurrent_mode = False
 
         seq1 = MidiSequence(
-            notes=[MidiNote(pitch=60, velocity=100, start_time=0.0, duration=0.1, channel=0)]
+            notes=[
+                MidiNote(
+                    pitch=60, velocity=100, start_time=0.0, duration=0.1, channel=0
+                )
+            ]
         )
         seq2 = MidiSequence(
-            notes=[MidiNote(pitch=64, velocity=100, start_time=0.0, duration=0.1, channel=1)]
+            notes=[
+                MidiNote(
+                    pitch=64, velocity=100, start_time=0.0, duration=0.1, channel=1
+                )
+            ]
         )
 
         start = time.perf_counter()
@@ -192,21 +223,25 @@ class TestAsyncPlaybackManager:
         assert elapsed >= 0.2
 
     def test_max_slots_limit(self, manager):
-        """Cannot exceed MAX_SLOTS concurrent playbacks."""
+        """Cannot exceed MAX_PLAYBACK_SLOTS concurrent playbacks."""
         seq = MidiSequence(
-            notes=[MidiNote(pitch=60, velocity=100, start_time=0.0, duration=5.0, channel=0)]
+            notes=[
+                MidiNote(
+                    pitch=60, velocity=100, start_time=0.0, duration=5.0, channel=0
+                )
+            ]
         )
 
         # Fill all slots
         slots = []
-        for i in range(MAX_SLOTS):
+        for i in range(MAX_PLAYBACK_SLOTS):
             slot_id = manager.play(seq)
             if slot_id is not None:
                 slots.append(slot_id)
             time.sleep(0.01)  # Give threads time to start
 
         # All slots should be used
-        assert len(slots) == MAX_SLOTS
+        assert len(slots) == MAX_PLAYBACK_SLOTS
 
         # Additional play should return None (all slots busy)
         time.sleep(0.05)
@@ -218,11 +253,15 @@ class TestAsyncPlaybackManager:
     def test_stop_specific_slot(self, manager):
         """Can stop a specific slot."""
         seq = MidiSequence(
-            notes=[MidiNote(pitch=60, velocity=100, start_time=0.0, duration=5.0, channel=0)]
+            notes=[
+                MidiNote(
+                    pitch=60, velocity=100, start_time=0.0, duration=5.0, channel=0
+                )
+            ]
         )
 
         slot1 = manager.play(seq)
-        slot2 = manager.play(seq)
+        manager.play(seq)  # Second slot, not used directly
 
         time.sleep(0.05)
         assert manager.active_count == 2
@@ -236,7 +275,11 @@ class TestAsyncPlaybackManager:
     def test_events_sent_correctly(self, manager, events_received):
         """Events are sent via the callbacks."""
         seq = MidiSequence(
-            notes=[MidiNote(pitch=60, velocity=100, start_time=0.0, duration=0.05, channel=0)]
+            notes=[
+                MidiNote(
+                    pitch=60, velocity=100, start_time=0.0, duration=0.05, channel=0
+                )
+            ]
         )
         manager.play(seq)
         manager.wait()
@@ -250,7 +293,7 @@ class TestAsyncPlaybackManager:
     def test_get_slot_info(self, manager):
         """Get slot info returns status of all slots."""
         info = manager.get_slot_info()
-        assert len(info) == MAX_SLOTS
+        assert len(info) == MAX_PLAYBACK_SLOTS
         for slot_info in info:
             assert "slot_id" in slot_info
             assert "active" in slot_info
@@ -276,9 +319,15 @@ class TestAsyncPlaybackManagerEvents:
         """Events are sorted by time."""
         seq = MidiSequence(
             notes=[
-                MidiNote(pitch=64, velocity=100, start_time=0.2, duration=0.1, channel=0),
-                MidiNote(pitch=60, velocity=100, start_time=0.0, duration=0.1, channel=0),
-                MidiNote(pitch=62, velocity=100, start_time=0.1, duration=0.1, channel=0),
+                MidiNote(
+                    pitch=64, velocity=100, start_time=0.2, duration=0.1, channel=0
+                ),
+                MidiNote(
+                    pitch=60, velocity=100, start_time=0.0, duration=0.1, channel=0
+                ),
+                MidiNote(
+                    pitch=62, velocity=100, start_time=0.1, duration=0.1, channel=0
+                ),
             ]
         )
         events = manager._build_events(seq)
@@ -292,8 +341,12 @@ class TestAsyncPlaybackManagerEvents:
         """Note off events come before note on at same time."""
         seq = MidiSequence(
             notes=[
-                MidiNote(pitch=60, velocity=100, start_time=0.0, duration=0.1, channel=0),
-                MidiNote(pitch=62, velocity=100, start_time=0.1, duration=0.1, channel=0),
+                MidiNote(
+                    pitch=60, velocity=100, start_time=0.0, duration=0.1, channel=0
+                ),
+                MidiNote(
+                    pitch=62, velocity=100, start_time=0.1, duration=0.1, channel=0
+                ),
             ]
         )
         events = manager._build_events(seq)
@@ -367,12 +420,14 @@ class TestExampleFilesPlayback:
 
         # Verify events were sent for both channels
         note_on_channels = set(ch for ch, _, _ in events_received["note_on"])
-        assert len(note_on_channels) == 2, f"Expected notes on 2 channels, got {note_on_channels}"
+        assert len(note_on_channels) == 2, (
+            f"Expected notes on 2 channels, got {note_on_channels}"
+        )
 
         # Verify program changes for both instruments
         # Violin = program 40, Cello = program 42
         program_channels = set(ch for ch, _ in events_received["program"])
-        assert len(program_channels) == 2, f"Expected program changes on 2 channels"
+        assert len(program_channels) == 2, "Expected program changes on 2 channels"
 
         programs_sent = set(prog for _, prog in events_received["program"])
         assert 40 in programs_sent, "Expected violin program (40)"

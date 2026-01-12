@@ -498,10 +498,13 @@ c d e    # Inline comment
 | Markers | Implemented | Parsed only |
 | On-repetitions | Implemented | Parsed only |
 | Slurs | Implemented | Parsed only |
-| Key signature | Not implemented | Parsed only |
-| Quoted S-expr lists | Not supported | Supported |
+| Key signature | Implemented | Parsed only |
+| Quoted S-expr lists | Supported | Supported |
 | Voice termination | Requires V0: in brackets | Auto-closes |
 | MIDI file export | Yes | No |
-| Async playback | Basic | Advanced (concurrent mode) |
+| MIDI file import | Yes | No |
+| Real-time transcription | Yes | No |
+| Concurrent playback | Yes (8 slots) | Yes |
+| Built-in audio | Yes (TinySoundFont) | No |
 
 See [ALDA_IMPLEMENTATIONS.md](../ALDA_IMPLEMENTATIONS.md) for detailed comparison.
