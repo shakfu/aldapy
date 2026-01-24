@@ -344,3 +344,344 @@ class TestMidiMessage:
         assert msg is not None
         assert hasattr(msg, "bytes")
         assert hasattr(msg, "timestamp")
+
+
+# =============================================================================
+# Additional Coverage Tests
+# =============================================================================
+
+
+class TestTranscribeSessionProcessMessage:
+    """Tests for _process_message method."""
+
+    def test_process_short_message_ignored(self):
+        """Messages with less than 2 bytes are ignored."""
+
+        class MockMessage:
+            def __init__(self, bytes_):
+                self.bytes = bytes_
+
+        session = TranscribeSession()
+        session._running = True
+        session._pending_notes = {}
+        session._recorded_notes = []
+
+        # Single byte message
+        msg = MockMessage([0x90])
+        session._process_message(msg, 0.0)
+
+        # No notes should be recorded
+        assert len(session._pending_notes) == 0
+        assert len(session._recorded_notes) == 0
+
+    def test_process_note_on_with_velocity_zero(self):
+        """Note On with velocity 0 is treated as Note Off."""
+
+        class MockMessage:
+            def __init__(self, bytes_):
+                self.bytes = bytes_
+
+        session = TranscribeSession()
+        session._running = True
+        session._pending_notes = {}
+        session._recorded_notes = []
+
+        # First send Note On
+        note_on = MockMessage([0x90, 60, 100])  # Note On, C4, velocity 100
+        session._process_message(note_on, 0.0)
+        assert 60 in session._pending_notes
+
+        # Then send Note On with velocity 0 (= Note Off)
+        note_off = MockMessage([0x90, 60, 0])  # Note On, C4, velocity 0
+        session._process_message(note_off, 0.5)
+
+        assert 60 not in session._pending_notes
+        assert len(session._recorded_notes) == 1
+
+    def test_process_note_off_message(self):
+        """Note Off messages (0x80) are processed correctly."""
+
+        class MockMessage:
+            def __init__(self, bytes_):
+                self.bytes = bytes_
+
+        session = TranscribeSession()
+        session._running = True
+        session._pending_notes = {}
+        session._recorded_notes = []
+
+        # First send Note On
+        note_on = MockMessage([0x90, 60, 100])
+        session._process_message(note_on, 0.0)
+
+        # Then send Note Off (0x80)
+        note_off = MockMessage([0x80, 60, 0])
+        session._process_message(note_off, 0.5)
+
+        assert 60 not in session._pending_notes
+        assert len(session._recorded_notes) == 1
+        assert session._recorded_notes[0].duration == 0.5
+
+    def test_process_note_on_replaces_pending(self):
+        """New Note On at same pitch ends previous note."""
+
+        class MockMessage:
+            def __init__(self, bytes_):
+                self.bytes = bytes_
+
+        session = TranscribeSession()
+        session._running = True
+        session._pending_notes = {}
+        session._recorded_notes = []
+
+        # First Note On
+        msg1 = MockMessage([0x90, 60, 100])
+        session._process_message(msg1, 0.0)
+
+        # Second Note On at same pitch (before Note Off)
+        msg2 = MockMessage([0x90, 60, 80])
+        session._process_message(msg2, 0.3)
+
+        # Should have ended first note and started new one
+        assert len(session._recorded_notes) == 1
+        assert session._recorded_notes[0].duration == pytest.approx(0.3, abs=0.01)
+        assert 60 in session._pending_notes
+
+
+class TestTranscribeSessionQuantization:
+    """Tests for quantization methods."""
+
+    def test_quantize_beats_swing_outside_range(self):
+        """Swing quantization resets for notes outside detection range."""
+        session = TranscribeSession(feel="swing")
+        session._swing_next_is_long = False  # Start with short
+
+        # Duration outside swing detection range
+        result = session._quantize_beats(2.0, kind="note")
+
+        # Should reset to expecting long
+        assert session._swing_next_is_long is True
+
+    def test_quantize_beats_rest_no_swing(self):
+        """Rests don't use swing quantization."""
+        session = TranscribeSession(feel="swing")
+        session._swing_next_is_long = True
+
+        # Quantize a rest - should not apply swing
+        result = session._quantize_beats(0.5, kind="rest")
+
+        # Should use normal quantization (0.5 rounds to 0.5 with 0.25 grid)
+        assert result == pytest.approx(0.5, abs=0.01)
+
+    def test_quantize_beats_no_grid(self):
+        """Quantization with zero grid returns raw beats."""
+        session = TranscribeSession(quantize_grid=0)
+
+        result = session._quantize_beats(0.33, kind="note")
+        assert result == pytest.approx(0.33, abs=0.001)
+
+    def test_grid_value_triplet(self):
+        """Triplet feel uses 1/3 beat grid."""
+        session = TranscribeSession(feel="triplet")
+        assert session._grid_value() == pytest.approx(1.0 / 3.0, abs=0.001)
+
+    def test_grid_value_quintuplet(self):
+        """Quintuplet feel uses 0.2 beat grid."""
+        session = TranscribeSession(feel="quintuplet")
+        assert session._grid_value() == pytest.approx(0.2, abs=0.001)
+
+    def test_grid_value_straight(self):
+        """Straight feel uses quantize_grid."""
+        session = TranscribeSession(feel="straight", quantize_grid=0.125)
+        assert session._grid_value() == 0.125
+
+
+class TestTranscribeSessionElementBeats:
+    """Tests for _element_beats method."""
+
+    def test_element_beats_note(self):
+        """Element beats for Note with duration."""
+        session = TranscribeSession()
+        n = Note(pitch="c", duration=4)  # Quarter note = 1 beat
+        result = session._element_beats(n)
+        assert result == pytest.approx(1.0, abs=0.01)
+
+    def test_element_beats_note_no_duration(self):
+        """Element beats for Note without duration returns None."""
+        session = TranscribeSession()
+        n = Note(pitch="c")
+        result = session._element_beats(n)
+        assert result is None
+
+    def test_element_beats_rest(self):
+        """Element beats for Rest with duration."""
+        session = TranscribeSession()
+        r = Rest(duration=8)  # Eighth note = 0.5 beats
+        result = session._element_beats(r)
+        assert result == pytest.approx(0.5, abs=0.01)
+
+    def test_element_beats_rest_no_duration(self):
+        """Element beats for Rest without duration returns None."""
+        session = TranscribeSession()
+        r = Rest()
+        result = session._element_beats(r)
+        assert result is None
+
+    def test_element_beats_chord(self):
+        """Element beats for Chord with duration."""
+        session = TranscribeSession()
+        c = Chord(notes=(Note(pitch="c"), Note(pitch="e")), duration=4)
+        result = session._element_beats(c)
+        assert result == pytest.approx(1.0, abs=0.01)
+
+    def test_element_beats_chord_no_duration(self):
+        """Element beats for Chord without duration returns None."""
+        session = TranscribeSession()
+        c = Chord(notes=(Note(pitch="c"), Note(pitch="e")))
+        result = session._element_beats(c)
+        assert result is None
+
+
+class TestTranscribeSessionStripSlur:
+    """Tests for _strip_slur method."""
+
+    def test_strip_slur_note_slurred(self):
+        """Strip slur from slurred note."""
+        n = Note(pitch="c", slurred=True)
+        result = TranscribeSession._strip_slur(n)
+        assert result.slurred is False
+        assert result.pitch == "c"
+
+    def test_strip_slur_note_not_slurred(self):
+        """Strip slur from non-slurred note returns same."""
+        n = Note(pitch="c", slurred=False)
+        result = TranscribeSession._strip_slur(n)
+        assert result.pitch == "c"
+        assert result.slurred is False
+
+    def test_strip_slur_chord_with_slurred_notes(self):
+        """Strip slur from chord with slurred notes."""
+        c = Chord(
+            notes=(
+                Note(pitch="c", slurred=True),
+                Note(pitch="e", slurred=True),
+            )
+        )
+        result = TranscribeSession._strip_slur(c)
+        assert all(not n.slurred for n in result.notes)
+
+    def test_strip_slur_rest(self):
+        """Strip slur from rest returns same."""
+        r = Rest(duration=4)
+        result = TranscribeSession._strip_slur(r)
+        assert result.duration == 4
+
+
+class TestTranscribeSessionStopNotRunning:
+    """Tests for stop() when not running."""
+
+    def test_stop_when_not_running(self):
+        """stop() returns empty Seq when not running."""
+        session = TranscribeSession()
+        session._running = False
+
+        result = session.stop()
+        assert len(result.elements) == 0
+
+
+class TestTranscribeSessionSecondsBeatsConversion:
+    """Tests for seconds/beats conversion methods."""
+
+    def test_seconds_to_beats(self):
+        """Convert seconds to beats at default tempo."""
+        session = TranscribeSession(default_tempo=120.0)
+        # At 120 BPM, 1 second = 2 beats
+        result = session._seconds_to_beats(1.0)
+        assert result == pytest.approx(2.0, abs=0.01)
+
+    def test_beats_to_seconds(self):
+        """Convert beats to seconds at default tempo."""
+        session = TranscribeSession(default_tempo=120.0)
+        # At 120 BPM, 2 beats = 1 second
+        result = session._beats_to_seconds(2.0)
+        assert result == pytest.approx(1.0, abs=0.01)
+
+    def test_seconds_to_beats_different_tempo(self):
+        """Convert seconds to beats at different tempo."""
+        session = TranscribeSession(default_tempo=60.0)
+        # At 60 BPM, 1 second = 1 beat
+        result = session._seconds_to_beats(1.0)
+        assert result == pytest.approx(1.0, abs=0.01)
+
+
+class TestTranscribeSessionCollapseTuplets:
+    """Tests for _collapse_tuplets method."""
+
+    def test_collapse_tuplets_no_division(self):
+        """No collapse when no tuplet_division in metadata."""
+        session = TranscribeSession()
+        elements = [Note(pitch="c", duration=4)]
+        metadata = {"feel": "straight"}
+
+        result = session._collapse_tuplets(elements, metadata)
+        assert result == elements
+
+    def test_collapse_tuplets_division_one(self):
+        """No collapse when tuplet_division is 1 or less."""
+        session = TranscribeSession()
+        elements = [Note(pitch="c", duration=4)]
+        metadata = {"tuplet_division": 1}
+
+        result = session._collapse_tuplets(elements, metadata)
+        assert result == elements
+
+    def test_collapse_tuplets_non_matching_duration(self):
+        """Elements with non-matching durations pass through."""
+        session = TranscribeSession(feel="triplet")
+        # Quarter note doesn't match triplet eighth target
+        elements = [Note(pitch="c", duration=4)]
+        metadata = {"tuplet_division": 3}
+
+        result = session._collapse_tuplets(elements, metadata)
+        assert result == elements
+
+
+class TestGroupNotes:
+    """Tests for _group_notes method."""
+
+    def test_group_single_note(self):
+        """Single note forms single group."""
+        session = TranscribeSession()
+        notes = [RecordedNote(pitch=60, velocity=100, start_time=0.0, duration=0.5)]
+
+        groups = session._group_notes(notes)
+
+        assert len(groups) == 1
+        assert len(groups[0]) == 1
+
+    def test_group_simultaneous_notes(self):
+        """Notes starting at same time form one group."""
+        session = TranscribeSession()
+        notes = [
+            RecordedNote(pitch=60, velocity=100, start_time=0.0, duration=0.5),
+            RecordedNote(pitch=64, velocity=100, start_time=0.001, duration=0.5),
+        ]
+
+        groups = session._group_notes(notes)
+
+        assert len(groups) == 1
+        assert len(groups[0]) == 2
+
+    def test_group_sequential_notes(self):
+        """Notes at different times form separate groups."""
+        session = TranscribeSession()
+        notes = [
+            RecordedNote(pitch=60, velocity=100, start_time=0.0, duration=0.5),
+            RecordedNote(pitch=64, velocity=100, start_time=0.6, duration=0.5),
+        ]
+
+        groups = session._group_notes(notes)
+
+        assert len(groups) == 2
+        assert len(groups[0]) == 1
+        assert len(groups[1]) == 1

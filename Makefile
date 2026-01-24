@@ -5,7 +5,8 @@ endef
 
 
 .PHONY: all sync resync build test clean format lint typecheck check  \
-		reset publish publish-test assets fullcheck wheel release
+		reset publish publish-test assets fullcheck wheel release \
+		coverage test-review
 
 all: sync
 
@@ -30,6 +31,14 @@ release:
 
 test:
 	@uv run pytest tests/ -v
+
+test-review:
+	@uv run pytest --review tests/
+
+coverage:
+	@uv run pytest --cov-report term-missing:skip-covered --cov=src/aldakit tests/
+
+
 
 format:
 	@uv run ruff format src/ tests/

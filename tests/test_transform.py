@@ -561,3 +561,207 @@ class TestIntegration:
         assert score.ast is not None
         assert score.midi is not None
         assert len(score.midi.notes) == 3
+
+
+# =============================================================================
+# Additional Coverage Tests
+# =============================================================================
+
+
+class TestTransposeNestedSeq:
+    """Tests for transpose with nested sequences."""
+
+    def test_transpose_nested_seq(self):
+        """Transpose handles nested Seq elements."""
+        inner = seq(note("c"), note("d"))
+        outer = seq(inner, note("e"))
+        transposed = transpose(outer, 2)
+
+        # Inner seq should be transposed too
+        assert len(transposed.elements) == 2
+        inner_transposed = transposed.elements[0]
+        assert hasattr(inner_transposed, "elements")
+        assert inner_transposed.elements[0].pitch == "d"
+        assert inner_transposed.elements[1].pitch == "e"
+
+
+class TestInvertNestedSeq:
+    """Tests for invert with nested sequences."""
+
+    def test_invert_nested_seq(self):
+        """Invert handles nested Seq elements."""
+        inner = seq(note("c", octave=4), note("e", octave=4))
+        outer = seq(inner)
+        inverted = invert(outer, axis=60)  # Axis at C4
+
+        inner_inverted = inverted.elements[0]
+        assert hasattr(inner_inverted, "elements")
+        # C4 at axis stays C4, E4 (4 semitones up) becomes Ab3 (4 down)
+        assert inner_inverted.elements[0].midi_pitch == 60
+        assert inner_inverted.elements[1].midi_pitch == 56
+
+    def test_invert_only_rests(self):
+        """Invert returns unchanged seq when only rests present."""
+        melody = seq(rest(duration=4), rest(duration=8))
+        inverted = invert(melody)
+        assert len(inverted.elements) == 2
+        assert isinstance(inverted.elements[0], type(rest()))
+        assert isinstance(inverted.elements[1], type(rest()))
+
+
+class TestAugmentExtended:
+    """Extended tests for augment transformer."""
+
+    def test_augment_nested_seq(self):
+        """Augment handles nested Seq elements."""
+        inner = seq(note("c", duration=8), note("d", duration=8))
+        outer = seq(inner)
+        augmented = augment(outer, 2)
+
+        inner_augmented = augmented.elements[0]
+        assert hasattr(inner_augmented, "elements")
+        assert inner_augmented.elements[0].duration == 4
+        assert inner_augmented.elements[1].duration == 4
+
+    def test_augment_seconds_duration(self):
+        """Augment handles seconds-based duration."""
+        melody = seq(note("c", seconds=1.0))
+        augmented = augment(melody, 2)
+        assert augmented.elements[0].seconds == 2.0
+
+    def test_augment_rest_ms_duration(self):
+        """Augment handles rest with ms duration."""
+        melody = seq(rest(ms=500))
+        augmented = augment(melody, 2)
+        assert augmented.elements[0].ms == 1000
+
+    def test_augment_rest_seconds_duration(self):
+        """Augment handles rest with seconds duration."""
+        melody = seq(rest(seconds=1.0))
+        augmented = augment(melody, 2)
+        assert augmented.elements[0].seconds == 2.0
+
+    def test_augment_note_without_duration(self):
+        """Augment handles note without explicit duration."""
+        melody = seq(note("c"))  # No duration specified
+        augmented = augment(melody, 2)
+        # Should pass through unchanged
+        assert augmented.elements[0].pitch == "c"
+        assert augmented.elements[0].duration is None
+
+    def test_augment_rest_without_duration(self):
+        """Augment handles rest without explicit duration."""
+        melody = seq(rest())  # No duration specified
+        augmented = augment(melody, 2)
+        assert augmented.elements[0].duration is None
+
+    def test_augment_chord_without_duration(self):
+        """Augment handles chord without explicit duration."""
+        melody = seq(chord("c", "e", "g"))  # No duration
+        augmented = augment(melody, 2)
+        # Should pass through unchanged
+        assert len(augmented.elements[0].notes) == 3
+
+
+class TestDiminishExtended:
+    """Extended tests for diminish transformer."""
+
+    def test_diminish_nested_seq(self):
+        """Diminish handles nested Seq elements."""
+        inner = seq(note("c", duration=4), note("d", duration=4))
+        outer = seq(inner)
+        diminished = diminish(outer, 2)
+
+        inner_diminished = diminished.elements[0]
+        assert hasattr(inner_diminished, "elements")
+        assert inner_diminished.elements[0].duration == 8
+        assert inner_diminished.elements[1].duration == 8
+
+    def test_diminish_seconds_duration(self):
+        """Diminish handles seconds-based duration."""
+        melody = seq(note("c", seconds=2.0))
+        diminished = diminish(melody, 2)
+        assert diminished.elements[0].seconds == 1.0
+
+    def test_diminish_rest_ms_duration(self):
+        """Diminish handles rest with ms duration."""
+        melody = seq(rest(ms=1000))
+        diminished = diminish(melody, 2)
+        assert diminished.elements[0].ms == 500
+
+    def test_diminish_rest_seconds_duration(self):
+        """Diminish handles rest with seconds duration."""
+        melody = seq(rest(seconds=2.0))
+        diminished = diminish(melody, 2)
+        assert diminished.elements[0].seconds == 1.0
+
+    def test_diminish_note_without_duration(self):
+        """Diminish handles note without explicit duration."""
+        melody = seq(note("c"))  # No duration specified
+        diminished = diminish(melody, 2)
+        # Should pass through unchanged
+        assert diminished.elements[0].pitch == "c"
+        assert diminished.elements[0].duration is None
+
+    def test_diminish_rest_without_duration(self):
+        """Diminish handles rest without explicit duration."""
+        melody = seq(rest())  # No duration specified
+        diminished = diminish(melody, 2)
+        assert diminished.elements[0].duration is None
+
+    def test_diminish_chord_without_duration(self):
+        """Diminish handles chord without explicit duration."""
+        melody = seq(chord("c", "e", "g"))  # No duration
+        diminished = diminish(melody, 2)
+        # Should pass through unchanged
+        assert len(diminished.elements[0].notes) == 3
+
+
+class TestInvertChordExtended:
+    """Extended tests for invert with chords."""
+
+    def test_invert_chord_uses_axis(self):
+        """Invert chord uses specified axis."""
+        # Create chord with notes at octave 4
+        melody = seq(
+            chord(
+                note("c", octave=4),
+                note("e", octave=4),
+                note("g", octave=4),
+            )
+        )
+        inverted = invert(melody, axis=60)  # Axis at C4
+
+        inverted_chord = inverted.elements[0]
+        # All notes should be inverted around C4
+        assert len(inverted_chord.notes) == 3
+
+
+class TestShuffleExtended:
+    """Extended tests for shuffle."""
+
+    def test_shuffle_without_seed(self):
+        """Shuffle without seed still produces valid result."""
+        melody = seq(note("c"), note("d"), note("e"), note("f"))
+        shuffled = shuffle(melody)  # No seed
+        assert len(shuffled.elements) == 4
+        # All original pitches should be present
+        pitches = sorted([n.pitch for n in shuffled.elements])
+        assert pitches == ["c", "d", "e", "f"]
+
+
+class TestInterleaveExtended:
+    """Extended tests for interleave."""
+
+    def test_interleave_empty_sequences(self):
+        """Interleave handles empty sequences."""
+        empty1 = seq()
+        empty2 = seq()
+        result = interleave(empty1, empty2)
+        assert len(result.elements) == 0
+
+    def test_interleave_single_sequence(self):
+        """Interleave with single sequence."""
+        melody = seq(note("c"), note("d"))
+        result = interleave(melody)
+        assert len(result.elements) == 2

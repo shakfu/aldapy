@@ -220,3 +220,341 @@ class TestIntegration:
         # MIDI files start with "MThd"
         with open(output_file, "rb") as f:
             assert f.read(4) == b"MThd"
+
+
+# =============================================================================
+# Additional Score Tests
+# =============================================================================
+
+
+class TestScoreFromElements:
+    """Tests for Score.from_elements and builder methods."""
+
+    def test_from_elements_basic(self):
+        """Create score from compose elements."""
+        from aldakit.compose import part, note, tempo
+
+        score = Score.from_elements(
+            part("piano"),
+            tempo(120),
+            note("c", duration=4),
+            note("d"),
+            note("e"),
+        )
+
+        assert score.midi is not None
+        assert len(score.midi.notes) == 3
+
+    def test_from_elements_repr(self):
+        """Repr for from_elements score."""
+        from aldakit.compose import note
+
+        score = Score.from_elements(note("c"), note("d"))
+        repr_str = repr(score)
+
+        assert "Score.from_elements" in repr_str
+        assert "2 elements" in repr_str
+
+    def test_from_parts(self):
+        """Create score from parts."""
+        from aldakit.compose import Part, note
+
+        p = Part("piano")
+        score = Score.from_parts(p)
+
+        assert score.midi is not None
+
+    def test_add_elements(self):
+        """Add elements to a score."""
+        from aldakit.compose import part, note
+
+        score = Score.from_elements(part("piano"))
+        score.add(note("c"), note("d"), note("e"))
+
+        assert len(score.midi.notes) == 3
+
+    def test_add_returns_self(self):
+        """Add returns self for chaining."""
+        from aldakit.compose import part, note
+
+        score = Score.from_elements(part("piano"))
+        result = score.add(note("c"))
+
+        assert result is score
+
+    def test_add_invalidates_cache(self):
+        """Adding elements invalidates cached properties."""
+        from aldakit.compose import part, note
+
+        score = Score.from_elements(part("piano"), note("c"))
+        midi1 = score.midi
+        assert len(midi1.notes) == 1
+
+        score.add(note("d"))
+        midi2 = score.midi
+
+        assert midi2 is not midi1
+        assert len(midi2.notes) == 2
+
+    def test_add_to_source_score_raises(self):
+        """Cannot add elements to source-based score."""
+        from aldakit.compose import note
+
+        score = Score("piano: c d e")
+
+        with pytest.raises(ValueError) as exc_info:
+            score.add(note("f"))
+
+        assert "from_elements" in str(exc_info.value)
+
+    def test_with_part(self):
+        """Use with_part builder method."""
+        score = Score.from_elements().with_part("piano")
+
+        assert score.midi is not None
+
+    def test_with_tempo(self):
+        """Use with_tempo builder method."""
+        from aldakit.compose import part, note
+
+        score = Score.from_elements(part("piano"), note("c")).with_tempo(100)
+
+        # Should have tempo change
+        assert len(score.midi.tempo_changes) >= 1
+
+    def test_with_volume(self):
+        """Use with_volume builder method."""
+        from aldakit.compose import part, note
+
+        score = Score.from_elements(part("piano"), note("c")).with_volume(80)
+
+        assert score.midi is not None
+
+    def test_chained_builders(self):
+        """Chain builder methods."""
+        score = (
+            Score.from_elements()
+            .with_part("piano")
+            .with_tempo(120)
+            .with_volume(80)
+        )
+
+        assert score.midi is not None
+
+
+class TestScoreToAlda:
+    """Tests for Score.to_alda method."""
+
+    def test_to_alda_source_mode(self):
+        """to_alda returns original source for source-based score."""
+        source = "piano: c d e"
+        score = Score(source)
+        assert score.to_alda() == source
+
+    def test_to_alda_elements_mode(self):
+        """to_alda generates alda from elements."""
+        from aldakit.compose import part, note
+
+        score = Score.from_elements(
+            part("piano"),
+            note("c", duration=4),
+            note("d"),
+        )
+        alda = score.to_alda()
+
+        assert "piano" in alda
+        assert "c" in alda
+
+
+class TestScoreFromMidi:
+    """Tests for Score.from_midi_file."""
+
+    def test_from_midi_file(self, tmp_path):
+        """Create score from MIDI file."""
+        # First create a MIDI file
+        source_score = Score("piano: c d e f g")
+        midi_path = tmp_path / "test.mid"
+        source_score.save(midi_path)
+
+        # Then import it
+        imported_score = Score.from_midi_file(midi_path)
+
+        assert imported_score.midi is not None
+        assert len(imported_score.midi.notes) >= 3
+
+    def test_from_midi_file_repr(self, tmp_path):
+        """Repr for midi-imported score."""
+        source_score = Score("piano: c d e")
+        midi_path = tmp_path / "test.mid"
+        source_score.save(midi_path)
+
+        imported_score = Score.from_midi_file(midi_path)
+        repr_str = repr(imported_score)
+
+        assert "Score.from_midi_file" in repr_str
+
+    def test_from_midi_file_to_alda(self, tmp_path):
+        """Convert MIDI file to Alda."""
+        source_score = Score("piano: c d e")
+        midi_path = tmp_path / "test.mid"
+        source_score.save(midi_path)
+
+        imported_score = Score.from_midi_file(midi_path)
+        alda = imported_score.to_alda()
+
+        # Should generate some Alda code
+        assert len(alda) > 0
+
+    def test_from_file_auto_detects_midi(self, tmp_path):
+        """from_file auto-detects MIDI files."""
+        source_score = Score("piano: c d e")
+        midi_path = tmp_path / "test.mid"
+        source_score.save(midi_path)
+
+        imported_score = Score.from_file(midi_path)
+
+        assert imported_score.midi is not None
+
+    def test_from_file_unknown_extension(self, tmp_path):
+        """from_file handles unknown extensions as Alda."""
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("piano: c d e")
+
+        score = Score.from_file(test_file)
+
+        assert len(score.midi.notes) == 3
+
+
+class TestScoreSave:
+    """Tests for Score.save method."""
+
+    def test_save_midi(self, tmp_path):
+        """Save as MIDI file."""
+        score = Score("piano: c d e")
+        midi_path = tmp_path / "output.mid"
+
+        score.save(midi_path)
+
+        assert midi_path.exists()
+        with open(midi_path, "rb") as f:
+            assert f.read(4) == b"MThd"
+
+    def test_save_alda(self, tmp_path):
+        """Save as Alda file."""
+        source = "piano: c d e"
+        score = Score(source)
+        alda_path = tmp_path / "output.alda"
+
+        score.save(alda_path)
+
+        assert alda_path.exists()
+        content = alda_path.read_text()
+        assert "piano" in content
+
+    def test_save_unknown_extension(self, tmp_path):
+        """Save with unknown extension defaults to MIDI."""
+        score = Score("piano: c d e")
+        output_path = tmp_path / "output.xyz"
+
+        score.save(output_path)
+
+        assert output_path.exists()
+        with open(output_path, "rb") as f:
+            assert f.read(4) == b"MThd"
+
+
+class TestScorePlay:
+    """Tests for Score.play with audio backend."""
+
+    def test_play_audio_backend_not_available(self, monkeypatch):
+        """play raises if audio backend not available."""
+        monkeypatch.setattr("aldakit.midi.backends.HAS_TSF", False)
+
+        score = Score("piano: c d e")
+
+        with pytest.raises(RuntimeError) as exc_info:
+            score.play(backend="audio")
+
+        assert "not available" in str(exc_info.value)
+
+
+class TestAstToAlda:
+    """Tests for _ast_to_alda helper function."""
+
+    def test_ast_to_alda_notes(self):
+        """Convert notes to Alda."""
+        from aldakit.score import _ast_to_alda
+        from aldakit.parser import parse
+
+        ast = parse("piano: c d e", "<test>")
+        alda = _ast_to_alda(ast)
+
+        assert "c" in alda
+        assert "d" in alda
+        assert "e" in alda
+
+    def test_ast_to_alda_with_accidentals(self):
+        """Convert notes with accidentals."""
+        from aldakit.score import _ast_to_alda
+        from aldakit.parser import parse
+
+        ast = parse("piano: c+ d- e", "<test>")
+        alda = _ast_to_alda(ast)
+
+        assert "c+" in alda or "c#" in alda
+        assert "d-" in alda
+
+    def test_ast_to_alda_with_durations(self):
+        """Convert notes with durations."""
+        from aldakit.score import _ast_to_alda
+        from aldakit.parser import parse
+
+        ast = parse("piano: c4 d8 e2", "<test>")
+        alda = _ast_to_alda(ast)
+
+        assert "4" in alda
+        assert "8" in alda
+        assert "2" in alda
+
+    def test_ast_to_alda_rest(self):
+        """Convert rests."""
+        from aldakit.score import _ast_to_alda
+        from aldakit.parser import parse
+
+        ast = parse("piano: c r d", "<test>")
+        alda = _ast_to_alda(ast)
+
+        assert "r" in alda
+
+    def test_ast_to_alda_chord(self):
+        """Convert chords."""
+        from aldakit.score import _ast_to_alda
+        from aldakit.parser import parse
+
+        ast = parse("piano: c/e/g", "<test>")
+        alda = _ast_to_alda(ast)
+
+        assert "/" in alda
+
+    def test_ast_to_alda_octave(self):
+        """Convert octave changes."""
+        from aldakit.score import _ast_to_alda
+        from aldakit.parser import parse
+
+        ast = parse("piano: o5 c > d < e", "<test>")
+        alda = _ast_to_alda(ast)
+
+        assert "o5" in alda
+        assert ">" in alda
+        assert "<" in alda
+
+    def test_ast_to_alda_tempo(self):
+        """Convert tempo attributes."""
+        from aldakit.score import _ast_to_alda
+        from aldakit.parser import parse
+
+        ast = parse("piano: (tempo 140) c d e", "<test>")
+        alda = _ast_to_alda(ast)
+
+        assert "tempo" in alda
+        assert "140" in alda
